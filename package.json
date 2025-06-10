@@ -11,5 +11,9 @@
 	"devDependencies": {
 		"typescript": "^5.5.2",
 		"wrangler": "^4.19.1"
+	},
+	"dependencies": {
+		"hono": "^4.7.11",
+		"openai": "^5.2.0"
 	}
 }

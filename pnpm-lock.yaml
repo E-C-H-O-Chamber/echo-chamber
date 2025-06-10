@@ -7,6 +7,13 @@ settings:
 importers:
 
   .:
+    dependencies:
+      hono:
+        specifier: ^4.7.11
+        version: 4.7.11
+      openai:
+        specifier: ^5.2.0
+        version: 5.2.0(ws@8.18.0)
     devDependencies:
       typescript:
         specifier: ^5.5.2
@@ -402,6 +409,10 @@ packages:
   glob-to-regexp@0.4.1:
     resolution: {integrity: sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw==}
 
+  hono@4.7.11:
+    resolution: {integrity: sha512-rv0JMwC0KALbbmwJDEnxvQCeJh+xbS3KEWW5PC9cMJ08Ur9xgatI0HmtgYZfOdOSOeYsp5LO2cOhdI8cLEbDEQ==}
+    engines: {node: '>=16.9.0'}
+
   is-arrayish@0.3.2:
     resolution: {integrity: sha512-eVRqCvVlZbuw3GrM63ovNSNAeA1K16kaR/LRY/92w0zxQ5/1YzwblUX652i4Xs9RwAGjW9d9y6X88t8OaAJfWQ==}
 
@@ -421,6 +432,18 @@ packages:
 
   ohash@2.0.11:
     resolution: {integrity: sha512-RdR9FQrFwNBNXAr4GixM8YaRZRJ5PUWbKYbE5eOsrwAjJW0q2REGcf79oYPsLyskQCZG1PLN+S/K1V00joZAoQ==}
+
+  openai@5.2.0:
+    resolution: {integrity: sha512-b+Sf2Yk2eApDkhqHr7C4d5hux9gkHUvyqQ7RrdSfLsjrXkCZpJPqkME0u5Py7RPB28Ozz+RkJZpW7YPTOoChew==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.23.8
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
 
   path-to-regexp@6.3.0:
     resolution: {integrity: sha512-Yhpw4T9C6hPpgPeA28us07OJeqZ5EzQTkbfwuhsUg0c237RomFoETJgmp2sa3F/41gfLE6G5cqcYwznmeEeOlQ==}
@@ -778,6 +801,8 @@ snapshots:
 
   glob-to-regexp@0.4.1: {}
 
+  hono@4.7.11: {}
+
   is-arrayish@0.3.2: {}
 
   mime@3.0.0: {}
@@ -803,6 +828,10 @@ snapshots:
   mustache@4.2.0: {}
 
   ohash@2.0.11: {}
+
+  openai@5.2.0(ws@8.18.0):
+    optionalDependencies:
+      ws: 8.18.0
 
   path-to-regexp@6.3.0: {}
 
