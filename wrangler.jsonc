@@ -23,6 +23,12 @@
 			}
 		]
 	},
+	"kv_namespaces": [
+		{
+			"binding": "ECHO_KV",
+			"id": "bdc8412da3cf40228ccf23e5997a73be"
+		}
+	],
 	"observability": {
 		"enabled": true
 	}
