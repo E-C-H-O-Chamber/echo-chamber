@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "cloudflare-docs": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://docs.mcp.cloudflare.com/sse"
+      ],
+      "env": {}
+    },
+    "cloudflare-observability": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://observability.mcp.cloudflare.com/sse"
+      ],
+      "env": {}
+    },
+    "cloudflare-browser": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://browser.mcp.cloudflare.com/sse"
+      ],
+      "env": {}
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch",
+      "Bash(pnpm dev)",
+      "Bash(pnpm install)",
+      "Bash(git:*)",
+			"mcp__cloudflare-docs",
+			"mcp__cloudflare-observability",
+			"mcp__cloudflare-browser"
+    ],
+    "deny": []
+  },
+	"enabledMcpjsonServers": [
+    "cloudflare-docs",
+    "cloudflare-observability",
+    "cloudflare-browser"
+  ]
+}
