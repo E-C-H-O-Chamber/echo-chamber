@@ -4,14 +4,18 @@
       "WebFetch",
       "Bash(pnpm dev)",
       "Bash(pnpm install)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm format:*)",
       "Bash(git:*)",
-			"mcp__cloudflare-docs",
-			"mcp__cloudflare-observability",
-			"mcp__cloudflare-browser"
+      "mcp__eslint",
+      "mcp__cloudflare-docs",
+      "mcp__cloudflare-observability",
+      "mcp__cloudflare-browser"
     ],
     "deny": []
   },
-	"enabledMcpjsonServers": [
+  "enabledMcpjsonServers": [
+    "eslint",
     "cloudflare-docs",
     "cloudflare-observability",
     "cloudflare-browser"
