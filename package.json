@@ -12,7 +12,8 @@
     "lint:check": "eslint ./src --max-warnings 0",
     "lint:inspect": "eslint --inspect-config",
     "format": "prettier --check --write \"**/*.{js,ts,json,md}\"",
-    "format:check": "prettier --check \"**/*.{js,ts,json,md}\""
+    "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
@@ -30,5 +31,15 @@
   "dependencies": {
     "hono": "^4.7.11",
     "openai": "^5.2.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "eslint",
+      "sharp",
+      "workerd"
+    ]
+  },
+  "volta": {
+    "node": "22.16.0"
   }
 }
