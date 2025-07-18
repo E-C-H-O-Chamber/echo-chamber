@@ -9,10 +9,10 @@ app.get('/', (c) => {
 });
 
 app.all('/rin/*', async (c) => {
-  const id = c.env.ECHO.idFromName('Rin');
+  const id = c.env.ECHO.idFromName('rin');
   const rin = c.env.ECHO.get(id);
-  const greeting = await rin.sayHello('world!');
-  return c.text(greeting);
+
+  return await rin.fetch(c.req.raw);
 });
 
 export default app satisfies ExportedHandler<Env>;
