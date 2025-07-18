@@ -7,7 +7,6 @@ export class Echo extends DurableObject<Env> {
   private readonly store: KVNamespace;
   private readonly storage: DurableObjectStorage;
   private readonly router: Hono;
-  private id: string;
 
   /**
    * The constructor is invoked once upon creation of the Durable Object, i.e. the first call to
@@ -18,26 +17,28 @@ export class Echo extends DurableObject<Env> {
    */
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    this.id = ctx.id.name ?? 'Echo';
     this.store = env.ECHO_KV;
     this.storage = ctx.storage;
     this.router = new Hono()
       .basePath('/:id')
       .get('/', async (c) => {
+        const id = await this.getId();
+        const name = await this.getName();
         const state = await this.getState();
+        const nextAlarm = await this.storage.getAlarm();
         return c.json({
-          id: this.id,
-          name: await this.getName(),
+          id,
+          name,
           state,
+          nextAlarm:
+            nextAlarm != null ? new Date(nextAlarm).toISOString() : null,
         });
       })
       .post('/wake', async (c) => {
-        this.id = c.req.param('id');
-        await this.wake(true);
+        await this.wake(c.req.param('id'), true);
         return c.text('OK.');
       })
       .post('/sleep', async (c) => {
-        this.id = c.req.param('id');
         await this.sleep(true);
         return c.text('OK.');
       })
@@ -45,8 +46,6 @@ export class Echo extends DurableObject<Env> {
         if (env.ENVIRONMENT !== 'local') {
           return c.notFound();
         }
-
-        this.id = c.req.param('id');
         await this.run();
         return c.text('OK.');
       });
@@ -55,6 +54,31 @@ export class Echo extends DurableObject<Env> {
 
   async fetch(request: Request): Promise<Response> {
     return this.router.fetch(request);
+  }
+
+  async alarm(alarmInfo?: AlarmInvocationInfo): Promise<void> {
+    console.log(`Alarm triggered with info: ${JSON.stringify(alarmInfo)}`);
+    await this.setNextAlarm();
+    await this.run();
+  }
+
+  async setNextAlarm(): Promise<void> {
+    const nextAlarm = new Date();
+    nextAlarm.setMinutes(nextAlarm.getMinutes() + 1);
+    nextAlarm.setSeconds(0);
+    nextAlarm.setMilliseconds(0);
+    await this.storage.setAlarm(nextAlarm);
+    console.log(`Next alarm set for ${nextAlarm.toISOString()}`);
+  }
+
+  async getId(): Promise<string> {
+    const id = await this.storage.get<string>('id');
+    return id ?? 'Echo';
+  }
+
+  async getName(): Promise<string> {
+    const name = await this.storage.get<string>('name');
+    return name ?? 'NO_NAME';
   }
 
   async getState(): Promise<EchoState> {
@@ -66,12 +90,10 @@ export class Echo extends DurableObject<Env> {
     await this.storage.put('state', newState);
   }
 
-  async getName(): Promise<string> {
-    const name = await this.store.get<string>(`name_${this.id}`);
-    return name ?? 'Echo';
-  }
+  async wake(id: string, force = false): Promise<void> {
+    await this.storage.put('id', id);
+    await this.storage.put('name', await this.store.get<string>(`name_${id}`));
 
-  async wake(force = false): Promise<void> {
     const state = await this.getState();
 
     if (!force && state === 'Sleeping') {
@@ -79,6 +101,7 @@ export class Echo extends DurableObject<Env> {
       return;
     }
 
+    await this.setNextAlarm();
     await this.setState('Idling');
   }
 
@@ -97,15 +120,25 @@ export class Echo extends DurableObject<Env> {
 
     try {
       await this.setState('Sleeping');
+      await this.storage.deleteAlarm();
       // sleep 処理
     } catch (error) {
       console.error('Echo encountered an error during sleep:', error);
     } finally {
+      await this.setNextAlarm();
       await this.setState('Idling');
     }
   }
 
   async run(): Promise<void> {
+    const id = await this.getId();
+
+    if (id === 'Echo') {
+      console.error('Echo ID is not set. Cannot run without an ID.');
+      await this.storage.deleteAlarm();
+      return;
+    }
+
     const state = await this.getState();
 
     if (state === 'Sleeping') {
