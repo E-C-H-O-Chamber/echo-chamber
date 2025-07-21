@@ -55,6 +55,26 @@ export default tseslint.config(
       '@typescript-eslint/strict-boolean-expressions': 'error',
       '@typescript-eslint/promise-function-async': 'error',
       '@typescript-eslint/explicit-function-return-type': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          varsIgnorePattern: '^_',
+          args: 'all',
+          argsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
+
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
+        {
+          allowNumber: true,
+          allowBoolean: true,
+          allowNever: true,
+        },
+      ],
 
       'no-eval': 'error',
       'no-implied-eval': 'error',
