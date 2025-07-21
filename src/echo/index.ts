@@ -1,6 +1,9 @@
 import { DurableObject } from 'cloudflare:workers';
 import { Hono } from 'hono';
 
+import { OpenAIClient } from '../llm/openai/client';
+import { echoSystemMessage } from '../llm/prompts/system';
+
 type EchoState = 'Idling' | 'Running' | 'Sleeping';
 
 export class Echo extends DurableObject<Env> {
@@ -139,24 +142,36 @@ export class Echo extends DurableObject<Env> {
       return;
     }
 
+    const name = await this.getName();
     const state = await this.getState();
 
     if (state === 'Sleeping') {
-      console.log('Echo is currently sleeping! Cannot run while sleeping.');
+      console.log(`${name} is currently sleeping! Cannot run while sleeping.`);
       return;
     }
 
     if (state === 'Running') {
-      console.log('Echo is already running.');
+      console.log(`${name} is already running.`);
       return;
     }
 
     await this.setState('Running');
 
+    console.log(`${name}が思考を開始しました。`);
+
     try {
-      // メイン処理をここに実装
+      const openai = new OpenAIClient(this.env.OPENAI_API_KEY);
+      const messages = [
+        {
+          role: 'system' as const,
+          content: echoSystemMessage,
+        },
+      ];
+      await openai.call(messages);
+
+      console.log(`${name}が思考を正常に完了しました。`);
     } catch (error) {
-      console.error('Echo encountered an error during main process:', error);
+      console.error(`${name}の思考中にエラーが発生しました:`, error);
     } finally {
       await this.setState('Idling');
     }

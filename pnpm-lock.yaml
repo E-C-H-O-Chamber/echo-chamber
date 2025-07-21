@@ -12,8 +12,11 @@ importers:
         specifier: ^4.7.11
         version: 4.7.11
       openai:
-        specifier: ^5.2.0
-        version: 5.2.0(ws@8.18.0)
+        specifier: ^5.10.1
+        version: 5.10.1(ws@8.18.0)(zod@4.0.5)
+      zod:
+        specifier: ^4.0.5
+        version: 4.0.5
     devDependencies:
       '@eslint/js':
         specifier: ^9.29.0
@@ -1179,8 +1182,8 @@ packages:
   ohash@2.0.11:
     resolution: {integrity: sha512-RdR9FQrFwNBNXAr4GixM8YaRZRJ5PUWbKYbE5eOsrwAjJW0q2REGcf79oYPsLyskQCZG1PLN+S/K1V00joZAoQ==}
 
-  openai@5.2.0:
-    resolution: {integrity: sha512-b+Sf2Yk2eApDkhqHr7C4d5hux9gkHUvyqQ7RrdSfLsjrXkCZpJPqkME0u5Py7RPB28Ozz+RkJZpW7YPTOoChew==}
+  openai@5.10.1:
+    resolution: {integrity: sha512-fq6xVfv1/gpLbsj8fArEt3b6B9jBxdhAK+VJ+bDvbUvNd+KTLlA3bnDeYZaBsGH9LUhJ1M1yXfp9sEyBLMx6eA==}
     hasBin: true
     peerDependencies:
       ws: ^8.18.0
@@ -1512,6 +1515,9 @@ packages:
 
   zod@3.22.3:
     resolution: {integrity: sha512-EjIevzuJRiRPbVH4mGc8nApb/lVLKVpmUhAaR5R5doKGfAnGJ6Gr3CViAVjP+4FWSxCsybeWQdcgCtbX+7oZug==}
+
+  zod@4.0.5:
+    resolution: {integrity: sha512-/5UuuRPStvHXu7RS+gmvRf4NXrNxpSllGwDnCBcJZtQsKrviYXm54yDGV2KYNLT5kq0lHGcl7lqWJLgSaG+tgA==}
 
 snapshots:
 
@@ -2692,9 +2698,10 @@ snapshots:
 
   ohash@2.0.11: {}
 
-  openai@5.2.0(ws@8.18.0):
+  openai@5.10.1(ws@8.18.0)(zod@4.0.5):
     optionalDependencies:
       ws: 8.18.0
+      zod: 4.0.5
 
   optionator@0.9.4:
     dependencies:
@@ -3111,3 +3118,5 @@ snapshots:
       stacktracey: 2.1.8
 
   zod@3.22.3: {}
+
+  zod@4.0.5: {}
