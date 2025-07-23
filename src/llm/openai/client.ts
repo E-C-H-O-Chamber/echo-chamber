@@ -106,7 +106,9 @@ export class OpenAIClient {
           output: await this.executeFunction(item),
         }))
     );
-    await this.call(nextInput, turn + 1);
+    if (nextInput.length > 0) {
+      await this.call(nextInput, turn + 1);
+    }
   }
 }
 
