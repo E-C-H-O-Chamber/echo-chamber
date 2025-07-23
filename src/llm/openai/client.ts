@@ -20,6 +20,7 @@ import type {
 const MAX_TURNS = 10;
 
 export class OpenAIClient {
+  private readonly env: Env;
   private readonly client: OpenAI;
   private readonly tools = {
     [getCurrentTimeFunction.name]: getCurrentTimeFunction,
@@ -29,9 +30,10 @@ export class OpenAIClient {
   };
   private previousResponseId: string | undefined;
 
-  constructor(apiKey: string) {
+  constructor(env: Env) {
+    this.env = env;
     this.client = new OpenAI({
-      apiKey,
+      apiKey: env.OPENAI_API_KEY,
     });
   }
 
@@ -69,7 +71,7 @@ export class OpenAIClient {
     }
 
     try {
-      const result = await tool.execute(functionCall.arguments);
+      const result = await tool.execute(functionCall.arguments, this.env);
       return JSON.stringify({ result });
     } catch (error) {
       return JSON.stringify({

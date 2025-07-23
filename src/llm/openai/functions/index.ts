@@ -7,7 +7,7 @@ export class Tool<Args extends z.ZodRawShape> {
     readonly name: string,
     readonly description: string,
     readonly parameters: Args,
-    readonly handler: (args: z.infer<z.ZodObject<Args>>) => unknown
+    readonly handler: (args: z.infer<z.ZodObject<Args>>, env: Env) => unknown
   ) {}
 
   get definition(): FunctionTool {
@@ -20,8 +20,8 @@ export class Tool<Args extends z.ZodRawShape> {
     };
   }
 
-  execute(args: string): unknown {
+  execute(args: string, env: Env): unknown {
     const parsedArgs = z.parse(z.object(this.parameters), JSON.parse(args));
-    return this.handler(parsedArgs);
+    return this.handler(parsedArgs, env);
   }
 }

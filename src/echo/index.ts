@@ -160,7 +160,7 @@ export class Echo extends DurableObject<Env> {
     console.log(`${name}が思考を開始しました。`);
 
     try {
-      const openai = new OpenAIClient(this.env.OPENAI_API_KEY);
+      const openai = new OpenAIClient(this.env);
       const messages = [
         {
           role: 'system' as const,
