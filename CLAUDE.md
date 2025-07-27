@@ -56,3 +56,72 @@ This is a Cloudflare Workers application built with Hono framework and TypeScrip
 - All paths under `/rin/*` are routed to an Echo Durable Object instance named "Rin"
 
 Always run `wrangler types` when making changes to `wrangler.jsonc` to keep TypeScript definitions up to date.
+
+## OpenAI Usage Management
+
+This application includes comprehensive OpenAI API usage tracking and management to prevent unexpected token consumption.
+
+### Architecture
+
+**OpenAIClient** (`src/llm/openai/client.ts`)
+
+- `call()` method returns cumulative `ResponseUsage` across all recursive function calls
+- Automatically logs warning when API response lacks usage information
+
+**Echo Durable Object** (`src/echo/index.ts`)
+
+- Accumulates daily usage statistics in Durable Object storage
+- Implements dynamic token limits based on time-proportional allocation
+- Stores usage data by date: `{ "2025-07-28": ResponseUsage, ... }`
+
+### Dynamic Token Limiting
+
+**Algorithm:**
+
+```typescript
+// Base settings
+DAILY_TOKEN_LIMIT = 1,000,000 tokens
+USAGE_BUFFER_FACTOR = 1.5x
+
+// Dynamic calculation
+idealUsage = DAILY_TOKEN_LIMIT × (currentHour / 24)
+dynamicLimit = min(idealUsage × BUFFER_FACTOR, DAILY_TOKEN_LIMIT)
+```
+
+**Examples:**
+
+- 06:00 → 375,000 tokens allowed (250k × 1.5)
+- 12:00 → 750,000 tokens allowed (500k × 1.5)
+- 18:00 → 1,000,000 tokens allowed (750k × 1.5, capped at daily limit)
+
+### HTTP Endpoints
+
+**Usage Statistics:**
+
+- `GET /rin/` - Returns Echo status including `allUsage` field
+- `GET /rin/usage` - Full usage history
+- `GET /rin/usage/today` - Today's usage
+- `GET /rin/usage/:date` - Specific date usage (format: YYYY-MM-DD, e.g., 2025-07-28)
+
+### Operational Notes
+
+**Threshold Monitoring:**
+
+- Pre-execution check prevents API calls when dynamic limit exceeded
+- Detailed violation logs include current time, limit, actual usage, and daily cap
+- Early termination preserves remaining daily quota for later hours
+
+**Usage Data Structure:**
+
+```typescript
+ResponseUsage {
+  input_tokens: number
+  input_tokens_details: { cached_tokens: number }
+  output_tokens: number
+  output_tokens_details: { reasoning_tokens: number }
+  total_tokens: number
+}
+```
+
+**Configuration Adjustment:**
+Monitor violation logs and daily surplus patterns to optimize `USAGE_BUFFER_FACTOR` (currently 1.5x). Consider time-of-day specific multipliers if usage patterns show consistent trends.
