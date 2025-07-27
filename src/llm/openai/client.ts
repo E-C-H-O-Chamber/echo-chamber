@@ -120,11 +120,10 @@ export class OpenAIClient {
   }
 
   async logOutput(output: ResponseOutputItem[]): Promise<void> {
-    await this.logger.info(
-      output
-        .filter((item) => item.type === 'message')
-        .map((item) =>
-          item.content
+    const logMessage = output
+      .map((item) => {
+        if (item.type === 'message') {
+          return item.content
             .map((c) => {
               const contentType = c.type;
               switch (contentType) {
@@ -138,10 +137,18 @@ export class OpenAIClient {
                   );
               }
             })
-            .join('\n\n')
-        )
-        .join('\n\n')
-    );
+            .join('\n\n');
+        } else if (item.type === 'function_call') {
+          return `*${item.name}*`;
+        }
+      })
+      .filter((msg) => msg !== undefined)
+      .join('\n\n');
+
+    // 空文字列の場合はログ出力をスキップ
+    if (logMessage.trim().length > 0) {
+      await this.logger.info(logMessage);
+    }
   }
 }
 
