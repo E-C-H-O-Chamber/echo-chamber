@@ -18,6 +18,7 @@ import type {
   ResponseFunctionToolCall,
   EasyInputMessage,
   ResponseOutputMessage,
+  ResponseUsage,
 } from 'openai/resources/responses/responses';
 
 const MAX_TURNS = 10;
@@ -46,7 +47,7 @@ export class OpenAIClient {
    * Responses APIを実行
    */
   async createResponse(input: ResponseInput): Promise<Response> {
-    return await this.client.responses.create({
+    const response = await this.client.responses.create({
       input,
       model: 'gpt-4.1',
       parallel_tool_calls: true,
@@ -59,6 +60,13 @@ export class OpenAIClient {
       top_p: 0.95,
       truncation: 'auto',
     });
+
+    // Usage情報の確認（undefinedの場合のみwarnログ）
+    if (!response.usage) {
+      await this.logger.warn('Response usage information is undefined');
+    }
+
+    return response;
   }
 
   /**
@@ -89,7 +97,7 @@ export class OpenAIClient {
   /**
    * 完全な会話フロー（Function Calling含む）を実行
    */
-  async call(input: ResponseInput, turn = 1): Promise<void> {
+  async call(input: ResponseInput, turn = 1): Promise<ResponseUsage> {
     if (turn > MAX_TURNS) {
       throw new Error('Maximum turns exceeded');
     }
@@ -105,6 +113,15 @@ export class OpenAIClient {
     await this.logger.debug(response.output.map(formatOutputItem).join('\n\n'));
     await this.logOutput(response.output);
 
+    // 現在のレスポンスのusageを取得
+    let totalUsage: ResponseUsage = response.usage ?? {
+      input_tokens: 0,
+      input_tokens_details: { cached_tokens: 0 },
+      output_tokens: 0,
+      output_tokens_details: { reasoning_tokens: 0 },
+      total_tokens: 0,
+    };
+
     const nextInput: ResponseInput = await Promise.all(
       response.output
         .filter((item) => item.type === 'function_call')
@@ -114,9 +131,37 @@ export class OpenAIClient {
           output: await this.executeFunction(item),
         }))
     );
+
     if (nextInput.length > 0) {
-      await this.call(nextInput, turn + 1);
+      const recursiveUsage = await this.call(nextInput, turn + 1);
+      totalUsage = this.accumulateUsage(totalUsage, recursiveUsage);
     }
+
+    return totalUsage;
+  }
+
+  /**
+   * 複数のUsageオブジェクトを累積する
+   */
+  private accumulateUsage(
+    total: ResponseUsage,
+    additional: ResponseUsage
+  ): ResponseUsage {
+    return {
+      input_tokens: total.input_tokens + additional.input_tokens,
+      input_tokens_details: {
+        cached_tokens:
+          total.input_tokens_details.cached_tokens +
+          additional.input_tokens_details.cached_tokens,
+      },
+      output_tokens: total.output_tokens + additional.output_tokens,
+      output_tokens_details: {
+        reasoning_tokens:
+          total.output_tokens_details.reasoning_tokens +
+          additional.output_tokens_details.reasoning_tokens,
+      },
+      total_tokens: total.total_tokens + additional.total_tokens,
+    };
   }
 
   async logOutput(output: ResponseOutputItem[]): Promise<void> {
