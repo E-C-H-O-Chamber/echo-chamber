@@ -5,7 +5,7 @@ import {
   getChannelMessages,
   getUnreadMessageCount,
   sendChannelMessage,
-} from '../../discord';
+} from '../../../discord';
 
 import { Tool } from '.';
 
