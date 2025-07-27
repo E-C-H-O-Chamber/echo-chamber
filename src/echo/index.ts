@@ -1,6 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { Hono } from 'hono';
 
+import { getUnreadMessageCount } from '../discord';
 import { OpenAIClient } from '../llm/openai/client';
 import { echoSystemMessage } from '../llm/prompts/system';
 import { createLogger } from '../utils/logger';
@@ -168,6 +169,24 @@ export class Echo extends DurableObject<Env> {
 
     if (state === 'Running') {
       await this.logger.info(`${name} is already running.`);
+      return;
+    }
+
+    const channelId = await this.store.get<string>(
+      `chat_channel_discord_${id}`
+    );
+    if (channelId === null) {
+      await this.logger.error(`${name}のチャンネルIDが設定されていません。`);
+      return;
+    }
+
+    const unreadCount = await getUnreadMessageCount(
+      this.env.DISCORD_BOT_TOKEN_RIN,
+      channelId
+    );
+    await this.logger.info(`${name}の未読メッセージ数: ${unreadCount}`);
+    if (unreadCount === 0) {
+      await this.logger.info(`未読メッセージがありません。`);
       return;
     }
 
