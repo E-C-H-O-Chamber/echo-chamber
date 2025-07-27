@@ -6,6 +6,7 @@ import {
   getUnreadMessageCount,
   sendChannelMessage,
 } from '../../../discord';
+import { createLogger } from '../../../utils/logger';
 
 import { Tool } from '.';
 
@@ -14,10 +15,13 @@ export const checkNotificationsFunction = new Tool(
   'Check for new notifications in the chat channel',
   {},
   async (_, env) => {
+    const logger = createLogger(env);
     try {
       const channelId = await env.ECHO_KV.get('chat_channel_discord_rin');
       if (channelId === null) {
-        console.error('Chat channel ID not found in environment variables.');
+        await logger.error(
+          'Chat channel ID not found in environment variables.'
+        );
         return {
           error: 'Chat tool is currently unavailable.',
         };
@@ -35,7 +39,10 @@ export const checkNotificationsFunction = new Tool(
         },
       };
     } catch (error) {
-      console.error('Error checking notifications:', error);
+      await logger.error(
+        'Error checking notifications:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return {
         error: `Failed to check notifications: ${error instanceof Error ? error.message : String(error)}`,
       };
@@ -50,10 +57,13 @@ export const readChatMessagesFunction = new Tool(
     limit: z.number().min(1).describe('Number of messages to retrieve'),
   },
   async ({ limit }, env) => {
+    const logger = createLogger(env);
     try {
       const channelId = await env.ECHO_KV.get('chat_channel_discord_rin');
       if (channelId === null) {
-        console.error('Chat channel ID not found in environment variables.');
+        await logger.error(
+          'Chat channel ID not found in environment variables.'
+        );
         return {
           error: 'Chat tool is currently unavailable.',
         };
@@ -74,7 +84,10 @@ export const readChatMessagesFunction = new Tool(
         })),
       };
     } catch (error) {
-      console.error('Error reading chat messages:', error);
+      await logger.error(
+        'Error reading chat messages:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return {
         error: `Failed to read messages: ${error instanceof Error ? error.message : String(error)}`,
       };
@@ -89,10 +102,13 @@ export const sendChatMessageFunction = new Tool(
     message: z.string().describe('Message content to send'),
   },
   async ({ message }, env) => {
+    const logger = createLogger(env);
     try {
       const channelId = await env.ECHO_KV.get('chat_channel_discord_rin');
       if (channelId === null) {
-        console.error('Chat channel ID not found in environment variables.');
+        await logger.error(
+          'Chat channel ID not found in environment variables.'
+        );
         return {
           error: 'Chat tool is currently unavailable.',
         };
@@ -106,7 +122,10 @@ export const sendChatMessageFunction = new Tool(
         success: true,
       };
     } catch (error) {
-      console.error('Error sending chat message:', error);
+      await logger.error(
+        'Error sending chat message:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return {
         error: `Failed to send message: ${error instanceof Error ? error.message : String(error)}`,
         success: false,
@@ -123,10 +142,13 @@ export const addReactionToChatMessageFunction = new Tool(
     reaction: z.string().describe('Reaction to add, emoji string'),
   },
   async ({ messageId, reaction }, env) => {
+    const logger = createLogger(env);
     try {
       const channelId = await env.ECHO_KV.get('chat_channel_discord_rin');
       if (channelId === null) {
-        console.error('Chat channel ID not found in environment variables.');
+        await logger.error(
+          'Chat channel ID not found in environment variables.'
+        );
         return {
           error: 'Chat tool is currently unavailable.',
         };
@@ -143,7 +165,10 @@ export const addReactionToChatMessageFunction = new Tool(
         success: true,
       };
     } catch (error) {
-      console.error('Error adding reaction to chat message:', error);
+      await logger.error(
+        'Error adding reaction to chat message:',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return {
         error: `Failed to add reaction: ${error instanceof Error ? error.message : String(error)}`,
         success: false,

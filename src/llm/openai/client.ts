@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
 
+import { createLogger } from '../../utils/logger';
+
 import {
   checkNotificationsFunction,
   readChatMessagesFunction,
@@ -7,6 +9,7 @@ import {
 } from './functions/chat';
 import { getCurrentTimeFunction } from './functions/time';
 
+import type { Logger } from '../../utils/logger';
 import type {
   Response,
   ResponseInput,
@@ -29,12 +32,14 @@ export class OpenAIClient {
     [sendChatMessageFunction.name]: sendChatMessageFunction,
   };
   private previousResponseId: string | undefined;
+  private readonly logger: Logger;
 
   constructor(env: Env) {
     this.env = env;
     this.client = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
     });
+    this.logger = createLogger(env);
   }
 
   /**
@@ -89,7 +94,7 @@ export class OpenAIClient {
       throw new Error('Maximum turns exceeded');
     }
 
-    console.log(input.map(formatInputItem).join('\n\n'));
+    await this.logger.debug(input.map(formatInputItem).join('\n\n'));
 
     const response = await this.createResponse(input);
 
@@ -97,7 +102,8 @@ export class OpenAIClient {
       this.previousResponseId = response.id;
     }
 
-    console.log(response.output.map(formatOutputItem).join('\n\n'));
+    await this.logger.debug(response.output.map(formatOutputItem).join('\n\n'));
+    await this.logOutput(response.output);
 
     const nextInput: ResponseInput = await Promise.all(
       response.output
@@ -111,6 +117,31 @@ export class OpenAIClient {
     if (nextInput.length > 0) {
       await this.call(nextInput, turn + 1);
     }
+  }
+
+  async logOutput(output: ResponseOutputItem[]): Promise<void> {
+    await this.logger.info(
+      output
+        .filter((item) => item.type === 'message')
+        .map((item) =>
+          item.content
+            .map((c) => {
+              const contentType = c.type;
+              switch (contentType) {
+                case 'output_text':
+                  return c.text;
+                case 'refusal':
+                  return `*refusal: ${c.refusal}*`;
+                default:
+                  throw new Error(
+                    `Unexpected contentType: ${contentType satisfies never}`
+                  );
+              }
+            })
+            .join('\n\n')
+        )
+        .join('\n\n')
+    );
   }
 }
 

@@ -3,6 +3,9 @@ import { Hono } from 'hono';
 
 import { OpenAIClient } from '../llm/openai/client';
 import { echoSystemMessage } from '../llm/prompts/system';
+import { createLogger } from '../utils/logger';
+
+import type { Logger } from '../utils/logger';
 
 type EchoState = 'Idling' | 'Running' | 'Sleeping';
 
@@ -10,6 +13,7 @@ export class Echo extends DurableObject<Env> {
   private readonly store: KVNamespace;
   private readonly storage: DurableObjectStorage;
   private readonly router: Hono;
+  private readonly logger: Logger;
 
   /**
    * The constructor is invoked once upon creation of the Durable Object, i.e. the first call to
@@ -22,6 +26,7 @@ export class Echo extends DurableObject<Env> {
     super(ctx, env);
     this.store = env.ECHO_KV;
     this.storage = ctx.storage;
+    this.logger = createLogger(env);
     this.router = new Hono()
       .basePath('/:id')
       .get('/', async (c) => {
@@ -52,7 +57,7 @@ export class Echo extends DurableObject<Env> {
         await this.run();
         return c.text('OK.');
       });
-    console.log('Echo Durable Object created');
+    void this.logger.info('Echo Durable Object created');
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -60,7 +65,9 @@ export class Echo extends DurableObject<Env> {
   }
 
   async alarm(alarmInfo?: AlarmInvocationInfo): Promise<void> {
-    console.log(`Alarm triggered with info: ${JSON.stringify(alarmInfo)}`);
+    await this.logger.debug(
+      `Alarm triggered with info: ${JSON.stringify(alarmInfo)}`
+    );
     await this.setNextAlarm();
     await this.run();
   }
@@ -71,7 +78,7 @@ export class Echo extends DurableObject<Env> {
     nextAlarm.setSeconds(0);
     nextAlarm.setMilliseconds(0);
     await this.storage.setAlarm(nextAlarm);
-    console.log(`Next alarm set for ${nextAlarm.toISOString()}`);
+    await this.logger.debug(`Next alarm set for ${nextAlarm.toISOString()}`);
   }
 
   async getId(): Promise<string> {
@@ -100,7 +107,9 @@ export class Echo extends DurableObject<Env> {
     const state = await this.getState();
 
     if (!force && state === 'Sleeping') {
-      console.log('Echo is currently sleeping! Cannot wake while sleeping.');
+      await this.logger.warn(
+        'Echo is currently sleeping! Cannot wake while sleeping.'
+      );
       return;
     }
 
@@ -112,12 +121,14 @@ export class Echo extends DurableObject<Env> {
     const state = await this.getState();
 
     if (state === 'Sleeping') {
-      console.log('Echo is already sleeping.');
+      await this.logger.info('Echo is already sleeping.');
       return;
     }
 
     if (!force && state === 'Running') {
-      console.log('Echo is currently running! Cannot sleep while running.');
+      await this.logger.warn(
+        'Echo is currently running! Cannot sleep while running.'
+      );
       return;
     }
 
@@ -126,7 +137,10 @@ export class Echo extends DurableObject<Env> {
       await this.storage.deleteAlarm();
       // sleep 処理
     } catch (error) {
-      console.error('Echo encountered an error during sleep:', error);
+      await this.logger.error(
+        'Echo encountered an error during sleep:',
+        error instanceof Error ? error : new Error(String(error))
+      );
     } finally {
       await this.setNextAlarm();
       await this.setState('Idling');
@@ -137,7 +151,7 @@ export class Echo extends DurableObject<Env> {
     const id = await this.getId();
 
     if (id === 'Echo') {
-      console.error('Echo ID is not set. Cannot run without an ID.');
+      await this.logger.error('Echo ID is not set. Cannot run without an ID.');
       await this.storage.deleteAlarm();
       return;
     }
@@ -146,18 +160,19 @@ export class Echo extends DurableObject<Env> {
     const state = await this.getState();
 
     if (state === 'Sleeping') {
-      console.log(`${name} is currently sleeping! Cannot run while sleeping.`);
+      await this.logger.warn(
+        `${name} is currently sleeping! Cannot run while sleeping.`
+      );
       return;
     }
 
     if (state === 'Running') {
-      console.log(`${name} is already running.`);
+      await this.logger.info(`${name} is already running.`);
       return;
     }
 
     await this.setState('Running');
-
-    console.log(`${name}が思考を開始しました。`);
+    await this.logger.info(`${name}が思考を開始しました。`);
 
     try {
       const openai = new OpenAIClient(this.env);
@@ -168,10 +183,12 @@ export class Echo extends DurableObject<Env> {
         },
       ];
       await openai.call(messages);
-
-      console.log(`${name}が思考を正常に完了しました。`);
+      await this.logger.info(`${name}が思考を正常に完了しました。`);
     } catch (error) {
-      console.error(`${name}の思考中にエラーが発生しました:`, error);
+      await this.logger.error(
+        `${name}の思考中にエラーが発生しました:`,
+        error instanceof Error ? error : new Error(String(error))
+      );
     } finally {
       await this.setState('Idling');
     }
