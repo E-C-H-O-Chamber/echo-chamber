@@ -7,6 +7,7 @@ import {
   readChatMessagesFunction,
   sendChatMessageFunction,
 } from './functions/chat';
+import { thinkDeeplyFunction } from './functions/think';
 import { getCurrentTimeFunction } from './functions/time';
 
 import type { Logger } from '../../utils/logger';
@@ -31,6 +32,7 @@ export class OpenAIClient {
     [checkNotificationsFunction.name]: checkNotificationsFunction,
     [readChatMessagesFunction.name]: readChatMessagesFunction,
     [sendChatMessageFunction.name]: sendChatMessageFunction,
+    [thinkDeeplyFunction.name]: thinkDeeplyFunction,
   };
   private previousResponseId: string | undefined;
   private readonly logger: Logger;
