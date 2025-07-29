@@ -6,6 +6,8 @@
       "Bash(pnpm lint:*)",
       "Bash(pnpm format:*)",
       "Bash(pnpm typecheck)",
+      "Bash(pnpm test:run)",
+      "Bash(pnpm test:coverage)",
       "mcp__ide__getDiagnostics",
       "mcp__eslint",
       "mcp__cloudflare-docs",

@@ -13,12 +13,22 @@
     "lint:inspect": "eslint --inspect-config",
     "format": "prettier --check --write \"**/*.{js,ts,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "tdd": "vitest --watch --ui"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.8.57",
     "@eslint/js": "^9.29.0",
+    "@types/node": "^24.1.0",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
+    "@vitest/coverage-v8": "3.2.4",
+    "@vitest/ui": "^3.2.4",
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-import": "^2.31.0",
@@ -26,6 +36,7 @@
     "prettier": "^3.5.3",
     "typescript": "^5.5.2",
     "typescript-eslint": "^8.34.0",
+    "vitest": "^3.2.4",
     "wrangler": "^4.26.0"
   },
   "dependencies": {

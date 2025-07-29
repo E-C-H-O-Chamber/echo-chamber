@@ -29,6 +29,105 @@ pnpm format:check
 
 **Never complete tasks with unresolved errors from these commands.**
 
+## Automated Testing Strategy
+
+This project implements **t-wada式TDD (Test-Driven Development)** using the latest Cloudflare Workers testing environment.
+
+### Testing Commands
+
+**CRITICAL**: Always run tests after code changes to ensure functionality is preserved.
+
+- `pnpm test` - Run all tests in watch mode (recommended for development)
+- `pnpm test:run` - Run tests once and exit
+- `pnpm test:ui` - Open Vitest UI for interactive testing
+- `pnpm test:coverage` - Generate test coverage report
+- `pnpm tdd` - **Recommended**: Watch mode with UI for t-wada式TDD
+
+### Claude Code Testing Constraints
+
+**IMPORTANT**: Claude Code should avoid interactive commands due to execution limitations.
+
+**✅ Claude Code Should Use:**
+
+- `pnpm test:run` - Single execution with clear pass/fail results
+- `pnpm test:coverage` - Coverage measurement and reporting
+- `pnpm lint:check` - Code quality verification
+- `pnpm typecheck` - Type safety confirmation
+
+**❌ Claude Code Should NOT Use:**
+
+- `pnpm tdd` - Interactive UI requires human interaction
+- `pnpm test:watch` - Watch mode not suitable for automated execution
+- `pnpm test:ui` - Browser-based UI cannot be operated by Claude Code
+
+**Recommended Claude Code Workflow:**
+
+1. Write test code
+2. Execute `pnpm test:run` immediately for verification
+3. Fix any failing tests
+4. Re-run `pnpm test:run` to confirm green state
+5. Proceed to next test iteration
+
+This approach ensures continuous quality verification while respecting Claude Code's execution constraints.
+
+### Testing Architecture
+
+**Technology Stack (2024 Best Practices):**
+
+- **@cloudflare/vitest-pool-workers** - Executes tests in `workerd` runtime environment
+- **Vitest** - Fast, modern test runner with TypeScript support
+- **@vitest/ui** - Interactive testing interface for TDD workflows
+
+**Key Benefits:**
+
+- Tests run in actual Cloudflare Workers runtime (`workerd`), not Node.js emulation
+- Automatic isolation of Durable Objects and KV storage between tests
+- Real-time feedback for Red-Green-Refactor TDD cycles
+
+### Test Structure
+
+```
+test/
+├── unit/           # Pure function and component tests
+├── integration/    # End-to-end workflow tests using SELF.fetch()
+├── mocks/          # External API mocks (Discord, OpenAI)
+├── fixtures/       # Shared test data and constants
+└── helpers/        # Common test utilities and setup
+```
+
+### Testing Patterns
+
+**Durable Objects Testing:**
+
+- **Integration Tests**: Use `SELF.fetch()` to test HTTP endpoints and full request flows
+- **Unit Tests**: Use `runInDurableObject()` helper for direct instance testing
+
+**External Dependencies:**
+
+- **Discord API**: Fully mocked with realistic response patterns
+- **OpenAI API**: Comprehensive mock including usage tracking
+- **Environment Variables**: Isolated test environment setup
+
+### TDD Workflow
+
+1. **Red**: Write failing test first (`pnpm tdd` provides real-time feedback)
+2. **Green**: Write minimal code to pass the test
+3. **Refactor**: Improve code while maintaining test coverage
+
+### Characterization Tests
+
+For existing legacy code, we use **Characterization Tests** to:
+
+- Document current behavior before refactoring
+- Prevent regressions during code improvements
+- Enable safe architectural changes
+
+**Next Steps:**
+
+- Create Characterization Tests for core Echo Durable Object logic
+- Expand integration test coverage for Discord/OpenAI interactions
+- Establish CI/CD pipeline with automated testing
+
 ## Architecture Overview
 
 This is a Cloudflare Workers application built with Hono framework and TypeScript. The architecture consists of:
