@@ -3,6 +3,13 @@ import { Hono } from 'hono';
 
 import { getUnreadMessageCount } from '../discord';
 import { OpenAIClient } from '../llm/openai/client';
+import {
+  checkNotificationsFunction,
+  readChatMessagesFunction,
+  sendChatMessageFunction,
+} from '../llm/openai/functions/chat';
+import { thinkDeeplyFunction } from '../llm/openai/functions/think';
+import { getCurrentTimeFunction } from '../llm/openai/functions/time';
 import { echoSystemMessage } from '../llm/prompts/system';
 import { createLogger } from '../utils/logger';
 
@@ -246,7 +253,13 @@ export class Echo extends DurableObject<Env> {
     await this.logger.info(`${name}が思考を開始しました。`);
 
     try {
-      const openai = new OpenAIClient(this.env);
+      const openai = new OpenAIClient(this.env, [
+        getCurrentTimeFunction,
+        checkNotificationsFunction,
+        readChatMessagesFunction,
+        sendChatMessageFunction,
+        thinkDeeplyFunction,
+      ]);
       const messages = [
         {
           role: 'system' as const,

@@ -14,7 +14,14 @@ interface ToolResultError {
 
 export type ToolResult = ToolResultSuccess | ToolResultError;
 
-export class Tool<Args extends z.ZodRawShape> {
+export interface ITool {
+  name: string;
+  description: string;
+  definition: FunctionTool;
+  execute(args: string, env: Env): ToolResult | Promise<ToolResult>;
+}
+
+export class Tool<Args extends z.ZodRawShape> implements ITool {
   constructor(
     readonly name: string,
     readonly description: string,

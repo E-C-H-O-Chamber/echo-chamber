@@ -2,14 +2,7 @@ import OpenAI from 'openai';
 
 import { createLogger } from '../../utils/logger';
 
-import {
-  checkNotificationsFunction,
-  readChatMessagesFunction,
-  sendChatMessageFunction,
-} from './functions/chat';
-import { thinkDeeplyFunction } from './functions/think';
-import { getCurrentTimeFunction } from './functions/time';
-
+import type { ITool } from './functions';
 import type { Logger } from '../../utils/logger';
 import type {
   Response,
@@ -27,21 +20,16 @@ const MAX_TURNS = 10;
 export class OpenAIClient {
   private readonly env: Env;
   private readonly client: OpenAI;
-  private readonly tools = {
-    [getCurrentTimeFunction.name]: getCurrentTimeFunction,
-    [checkNotificationsFunction.name]: checkNotificationsFunction,
-    [readChatMessagesFunction.name]: readChatMessagesFunction,
-    [sendChatMessageFunction.name]: sendChatMessageFunction,
-    [thinkDeeplyFunction.name]: thinkDeeplyFunction,
-  };
+  private readonly tools: ITool[];
   private previousResponseId: string | undefined;
   private readonly logger: Logger;
 
-  constructor(env: Env) {
+  constructor(env: Env, tools: ITool[] = []) {
     this.env = env;
     this.client = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
     });
+    this.tools = tools;
     this.logger = createLogger(env);
   }
 
@@ -58,7 +46,7 @@ export class OpenAIClient {
       stream: false,
       temperature: 0.3,
       tool_choice: 'auto',
-      tools: Object.values(this.tools).map((tool) => tool.definition),
+      tools: this.tools.map((tool) => tool.definition),
       top_p: 0.95,
       truncation: 'auto',
     });
@@ -77,11 +65,11 @@ export class OpenAIClient {
   async executeFunction(
     functionCall: ResponseFunctionToolCall
   ): Promise<string> {
-    const tool = this.tools[functionCall.name];
+    const tool = this.tools.find(({ name }) => functionCall.name === name);
     if (!tool) {
       return JSON.stringify({
         error: `Function '${functionCall.name}' is not registered`,
-        available_functions: Object.keys(this.tools),
+        available_functions: this.tools.map(({ name }) => name),
       });
     }
 
