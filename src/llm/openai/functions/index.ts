@@ -2,12 +2,27 @@ import { z } from 'zod';
 
 import type { FunctionTool } from 'openai/resources/responses/responses';
 
+interface ToolResultSuccess {
+  success: true;
+  [key: string]: unknown;
+}
+
+interface ToolResultError {
+  success: false;
+  error: string;
+}
+
+export type ToolResult = ToolResultSuccess | ToolResultError;
+
 export class Tool<Args extends z.ZodRawShape> {
   constructor(
     readonly name: string,
     readonly description: string,
     readonly parameters: Args,
-    readonly handler: (args: z.infer<z.ZodObject<Args>>, env: Env) => unknown
+    readonly handler: (
+      args: z.infer<z.ZodObject<Args>>,
+      env: Env
+    ) => ToolResult | Promise<ToolResult>
   ) {}
 
   get definition(): FunctionTool {
@@ -20,7 +35,7 @@ export class Tool<Args extends z.ZodRawShape> {
     };
   }
 
-  execute(args: string, env: Env): unknown {
+  execute(args: string, env: Env): ToolResult | Promise<ToolResult> {
     const parsedArgs = z.parse(z.object(this.parameters), JSON.parse(args));
     return this.handler(parsedArgs, env);
   }

@@ -87,11 +87,11 @@ export class OpenAIClient {
 
     try {
       const result = await tool.execute(functionCall.arguments, this.env);
-      return JSON.stringify({ result });
+      return JSON.stringify(result);
     } catch (error) {
       return JSON.stringify({
-        error: `Failed to execute function '${functionCall.name}'`,
-        details: error instanceof Error ? error.message : String(error),
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }

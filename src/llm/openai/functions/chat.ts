@@ -23,6 +23,7 @@ export const checkNotificationsFunction = new Tool(
           'Chat channel ID not found in environment variables.'
         );
         return {
+          success: false,
           error: 'Chat tool is currently unavailable.',
         };
       }
@@ -33,9 +34,10 @@ export const checkNotificationsFunction = new Tool(
       );
 
       return {
+        success: true,
         notifications: {
           channel: 'chat',
-          unreadCount: unreadCount === 100 ? '99+' : unreadCount,
+          unreadCount: unreadCount > 99 ? '99+' : unreadCount,
         },
       };
     } catch (error) {
@@ -44,7 +46,8 @@ export const checkNotificationsFunction = new Tool(
         error instanceof Error ? error : new Error(String(error))
       );
       return {
-        error: `Failed to check notifications: ${error instanceof Error ? error.message : String(error)}`,
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -65,6 +68,7 @@ export const readChatMessagesFunction = new Tool(
           'Chat channel ID not found in environment variables.'
         );
         return {
+          success: false,
           error: 'Chat tool is currently unavailable.',
         };
       }
@@ -76,6 +80,7 @@ export const readChatMessagesFunction = new Tool(
       );
 
       return {
+        success: true,
         // 投稿日時の昇順
         messages: messages.reverse().map((message) => ({
           user: message.author.username,
@@ -89,6 +94,7 @@ export const readChatMessagesFunction = new Tool(
         error instanceof Error ? error : new Error(String(error))
       );
       return {
+        success: false,
         error: `Failed to read messages: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
@@ -110,6 +116,7 @@ export const sendChatMessageFunction = new Tool(
           'Chat channel ID not found in environment variables.'
         );
         return {
+          success: false,
           error: 'Chat tool is currently unavailable.',
         };
       }
@@ -127,8 +134,8 @@ export const sendChatMessageFunction = new Tool(
         error instanceof Error ? error : new Error(String(error))
       );
       return {
-        error: `Failed to send message: ${error instanceof Error ? error.message : String(error)}`,
         success: false,
+        error: `Failed to send message: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -150,6 +157,7 @@ export const addReactionToChatMessageFunction = new Tool(
           'Chat channel ID not found in environment variables.'
         );
         return {
+          success: false,
           error: 'Chat tool is currently unavailable.',
         };
       }
@@ -170,8 +178,8 @@ export const addReactionToChatMessageFunction = new Tool(
         error instanceof Error ? error : new Error(String(error))
       );
       return {
-        error: `Failed to add reaction: ${error instanceof Error ? error.message : String(error)}`,
         success: false,
+        error: `Failed to add reaction: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
