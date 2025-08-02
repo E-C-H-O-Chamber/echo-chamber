@@ -1,5 +1,5 @@
 import { env } from 'cloudflare:test';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   addReactionToChatMessageFunction,
   checkNotificationsFunction,
@@ -26,6 +26,15 @@ const mockKV = {
 };
 
 env.ECHO_KV = mockKV;
+
+vi.mock('../../../../../src/discord', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../../../../../src/discord')>();
+  return {
+    ...actual,
+    getUnreadMessageCount: vi.fn(),
+  };
+});
 
 describe('checkNotificationsFunction', () => {
   it('name', () => {

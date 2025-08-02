@@ -1,4 +1,4 @@
-import { sendChannelMessage } from '../discord/index';
+import { sendChannelMessage } from '../discord';
 
 import type {
   LogContext,

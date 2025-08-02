@@ -1,5 +1,6 @@
 import {
   RESTGetAPIChannelMessagesResult,
+  RESTGetAPICurrentUserResult,
   APIMessage,
   APIUser,
   APIReaction,
@@ -8,8 +9,12 @@ import {
 type MessageInput = {
   message: string;
   user: string;
+  userId?: string;
   timestamp: string;
-  reactions?: string[];
+  reactions?: {
+    emoji: string;
+    me: boolean;
+  }[];
 };
 
 export function createDiscordMessagesResponse(
@@ -17,7 +22,7 @@ export function createDiscordMessagesResponse(
 ): RESTGetAPIChannelMessagesResult {
   return messages.map((msg, index) => {
     const author: APIUser = {
-      id: `user-${index + 1}`,
+      id: msg.userId || `user-${index + 1}`,
       username: msg.user,
       discriminator: '0000',
       global_name: msg.user,
@@ -28,13 +33,13 @@ export function createDiscordMessagesResponse(
     };
 
     const reactions: APIReaction[] | undefined = msg.reactions?.map(
-      (emoji) => ({
+      ({ emoji, me }) => ({
         count: 1,
         count_details: {
           burst: 0,
           normal: 1,
         },
-        me: true,
+        me,
         me_burst: false,
         emoji: {
           id: null,
@@ -60,10 +65,34 @@ export function createDiscordMessagesResponse(
       mention_channels: [],
       attachments: [],
       embeds: [],
-      reactions: reactions || [],
+      reactions: reactions,
       pinned: false,
     };
 
     return message;
   });
+}
+
+/**
+ * Discordボットユーザーのレスポンスを作成
+ */
+export function createDiscordCurrentUserResponse(
+  user: string
+): RESTGetAPICurrentUserResult {
+  return {
+    id: user,
+    username: user,
+    discriminator: '0000',
+    global_name: user,
+    avatar: null,
+    bot: true,
+    system: false,
+    mfa_enabled: false,
+    banner: null,
+    accent_color: null,
+    locale: 'en-US',
+    verified: true,
+    email: null,
+    premium_type: 0,
+  };
 }

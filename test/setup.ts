@@ -1,10 +1,9 @@
 import { vi } from 'vitest';
 
 // Discord 関連の依存関係をグローバルにモック
-vi.mock('../src/discord', () => ({
+vi.mock('../src/discord/api', () => ({
   addReactionToMessage: vi.fn(),
   getChannelMessages: vi.fn(),
-  getUnreadMessageCount: vi.fn(),
   sendChannelMessage: vi.fn(),
   getCurrentUser: vi.fn(),
 }));
