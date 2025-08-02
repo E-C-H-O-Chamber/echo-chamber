@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { env } from 'cloudflare:test';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   accumulateUsage,
   formatInputItem,
@@ -6,6 +7,7 @@ import {
   formatMessage,
   formatBlock,
   formatFunctionCall,
+  OpenAIClient,
 } from '../../../../src/llm/openai/client';
 
 import type {
@@ -16,6 +18,334 @@ import type {
   ResponseOutputMessage,
   ResponseFunctionToolCall,
 } from 'openai/resources/responses/responses';
+import { thinkDeeplyFunction } from '../../../../src/llm/openai/functions/think';
+
+const mockCreateResponse = vi.fn().mockResolvedValue({});
+
+vi.mock('openai', () => {
+  return {
+    default: vi.fn(() => ({
+      responses: {
+        create: mockCreateResponse,
+      },
+    })),
+  };
+});
+
+describe('OpenAI Client', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('createResponse', async () => {
+    const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+    await client.createResponse([]);
+    expect(mockCreateResponse).toHaveBeenCalledWith({
+      input: [],
+      model: 'gpt-4.1',
+      parallel_tool_calls: true,
+      previous_response_id: undefined,
+      store: true,
+      stream: false,
+      temperature: 0.3,
+      tool_choice: 'auto',
+      tools: [thinkDeeplyFunction.definition],
+      top_p: 0.95,
+      truncation: 'auto',
+    });
+  });
+
+  describe('executeFunction', async () => {
+    it('正常なツール使用', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const result = await client.executeFunction({
+        type: 'function_call',
+        name: 'think_deeply',
+        call_id: 'call_123',
+        arguments: JSON.stringify({ thought: 'What is the meaning of life?' }),
+      });
+      expect(result).toBe(
+        JSON.stringify({
+          success: true,
+        })
+      );
+    });
+
+    it('未登録のツール使用', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const result = await client.executeFunction({
+        type: 'function_call',
+        name: 'unknown_function',
+        call_id: 'call_456',
+        arguments: JSON.stringify({ param: 'value' }),
+      });
+      expect(result).toBe(
+        JSON.stringify({
+          error: "Function 'unknown_function' is not registered",
+          available_functions: ['think_deeply'],
+        })
+      );
+    });
+
+    it('引数のパースエラー', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const result = await client.executeFunction({
+        type: 'function_call',
+        name: 'think_deeply',
+        call_id: 'call_789',
+        arguments: 'invalid_json',
+      });
+      const resultObj = JSON.parse(result);
+      expect(resultObj.success).toBe(false);
+      expect(resultObj.error).toBeDefined();
+    });
+
+    it('ツールの実行中にエラーが発生', async () => {
+      const errorFunction = {
+        name: 'error_function',
+        description: 'A function that always fails',
+        definition: {
+          type: 'function',
+          name: 'error_function',
+          description: 'A function that always fails',
+          parameters: {},
+          strict: true,
+        },
+        execute: () => {
+          throw new Error('Function execution error');
+        },
+      } as const;
+      const client = new OpenAIClient(env, [errorFunction]);
+
+      const result = await client.executeFunction({
+        type: 'function_call',
+        name: 'error_function',
+        call_id: 'call_999',
+        arguments: JSON.stringify({}),
+      });
+      const resultObj = JSON.parse(result);
+      expect(resultObj.success).toBe(false);
+      expect(resultObj.error).toBe('Function execution error');
+    });
+  });
+
+  describe('call', async () => {
+    it('シンプルな応答', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const input: ResponseInputItem[] = [
+        {
+          role: 'user',
+          content: 'Hello, how are you?',
+        },
+      ];
+      const usage = {
+        input_tokens: 0,
+        input_tokens_details: { cached_tokens: 0 },
+        output_tokens: 0,
+        output_tokens_details: { reasoning_tokens: 0 },
+        total_tokens: 0,
+      };
+      mockCreateResponse.mockResolvedValue({
+        id: 'response_123',
+        output: [],
+        usage,
+      });
+
+      const response = await client.call(input);
+      expect(mockCreateResponse).toHaveBeenCalledWith({
+        input,
+        model: 'gpt-4.1',
+        parallel_tool_calls: true,
+        previous_response_id: undefined,
+        store: true,
+        stream: false,
+        temperature: 0.3,
+        tool_choice: 'auto',
+        tools: [thinkDeeplyFunction.definition],
+        top_p: 0.95,
+        truncation: 'auto',
+      });
+      expect(response).toEqual(usage);
+      expect(mockCreateResponse).toHaveBeenCalledTimes(1);
+    });
+
+    it('ツールコールを含む応答', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const input: ResponseInputItem[] = [
+        {
+          role: 'user',
+          content: 'What is the meaning of life?',
+        },
+      ];
+      const usage1 = {
+        input_tokens: 10,
+        input_tokens_details: { cached_tokens: 0 },
+        output_tokens: 10,
+        output_tokens_details: { reasoning_tokens: 0 },
+        total_tokens: 20,
+      };
+      const usage2 = {
+        input_tokens: 5,
+        input_tokens_details: { cached_tokens: 0 },
+        output_tokens: 15,
+        output_tokens_details: { reasoning_tokens: 0 },
+        total_tokens: 20,
+      };
+      const usage = {
+        input_tokens: usage1.input_tokens + usage2.input_tokens,
+        input_tokens_details: {
+          cached_tokens:
+            usage1.input_tokens_details.cached_tokens +
+            usage2.input_tokens_details.cached_tokens,
+        },
+        output_tokens: usage1.output_tokens + usage2.output_tokens,
+        output_tokens_details: {
+          reasoning_tokens:
+            usage1.output_tokens_details.reasoning_tokens +
+            usage2.output_tokens_details.reasoning_tokens,
+        },
+        total_tokens: usage1.total_tokens + usage2.total_tokens,
+      };
+      mockCreateResponse.mockResolvedValueOnce({
+        id: 'response_123',
+        output: [
+          {
+            type: 'function_call',
+            call_id: 'call_123',
+            name: 'think_deeply',
+            arguments: JSON.stringify({
+              thought: 'What is the meaning of life?',
+            }),
+          },
+        ],
+        usage: usage1,
+      });
+      mockCreateResponse.mockResolvedValueOnce({
+        id: 'response_456',
+        output: [
+          {
+            type: 'message',
+            role: 'assistant',
+            content: [
+              {
+                type: 'output_text',
+                text: 'The meaning of life is a philosophical question that has been asked for centuries. Different cultures and philosophies have offered various answers, but it ultimately depends on individual beliefs and values.',
+              },
+            ],
+          },
+        ],
+        usage: usage2,
+      });
+      const nextInput = [
+        {
+          type: 'function_call_output',
+          call_id: 'call_123',
+          output: JSON.stringify({ success: true }),
+        },
+      ];
+      const response = await client.call(input);
+      expect(mockCreateResponse).toHaveBeenNthCalledWith(1, {
+        input,
+        model: 'gpt-4.1',
+        parallel_tool_calls: true,
+        previous_response_id: undefined,
+        store: true,
+        stream: false,
+        temperature: 0.3,
+        tool_choice: 'auto',
+        tools: [thinkDeeplyFunction.definition],
+        top_p: 0.95,
+        truncation: 'auto',
+      });
+      expect(mockCreateResponse).toHaveBeenNthCalledWith(2, {
+        input: nextInput,
+        model: 'gpt-4.1',
+        parallel_tool_calls: true,
+        previous_response_id: 'response_123',
+        store: true,
+        stream: false,
+        temperature: 0.3,
+        tool_choice: 'auto',
+        tools: [thinkDeeplyFunction.definition],
+        top_p: 0.95,
+        truncation: 'auto',
+      });
+      expect(response).toEqual(usage);
+      expect(mockCreateResponse).toHaveBeenCalledTimes(2);
+    });
+
+    it('MAX_TURNSを超える呼び出し', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const input: ResponseInputItem[] = [
+        {
+          role: 'user',
+          content: 'Hello, how are you?',
+        },
+      ];
+      mockCreateResponse.mockResolvedValue({
+        id: 'response_123',
+        output: [
+          {
+            type: 'function_call',
+            call_id: 'call_123',
+            name: 'think_deeply',
+            arguments: JSON.stringify({
+              thought: 'What is the meaning of life?',
+            }),
+            status: 'completed',
+          },
+        ],
+        usage: {
+          input_tokens: 0,
+          input_tokens_details: { cached_tokens: 0 },
+          output_tokens: 0,
+          output_tokens_details: { reasoning_tokens: 0 },
+          total_tokens: 0,
+        },
+      });
+
+      await expect(client.call(input)).rejects.toThrow(
+        'Maximum turns exceeded'
+      );
+      expect(mockCreateResponse).toHaveBeenCalledTimes(10);
+    });
+  });
+
+  describe('logOutput', () => {
+    it('ログ出力のフォーマット', () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const output: ResponseOutputItem[] = [
+        {
+          type: 'message',
+          role: 'assistant',
+          id: 'msg_123',
+          status: 'completed',
+          content: [
+            {
+              type: 'output_text',
+              text: 'I am fine, thank you!',
+              annotations: [],
+            },
+          ],
+        },
+      ];
+      client.logOutput(output);
+
+      expect(client['logger'].info).toHaveBeenCalledWith(
+        'I am fine, thank you!'
+      );
+      expect(client['logger'].info).toHaveBeenCalledTimes(1);
+    });
+
+    it('空の出力アイテム', () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const output: ResponseOutputItem[] = [];
+      client.logOutput(output);
+
+      expect(client['logger'].info).toHaveBeenCalledTimes(0);
+    });
+  });
+});
 
 describe('accumulateUsage', () => {
   describe('基本的な累積', () => {
