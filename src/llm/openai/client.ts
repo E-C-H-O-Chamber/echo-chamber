@@ -136,34 +136,10 @@ export class OpenAIClient {
 
     if (nextInput.length > 0) {
       const recursiveUsage = await this.call(nextInput, turn + 1);
-      totalUsage = this.accumulateUsage(totalUsage, recursiveUsage);
+      totalUsage = accumulateUsage(totalUsage, recursiveUsage);
     }
 
     return totalUsage;
-  }
-
-  /**
-   * 複数のUsageオブジェクトを累積する
-   */
-  private accumulateUsage(
-    total: ResponseUsage,
-    additional: ResponseUsage
-  ): ResponseUsage {
-    return {
-      input_tokens: total.input_tokens + additional.input_tokens,
-      input_tokens_details: {
-        cached_tokens:
-          total.input_tokens_details.cached_tokens +
-          additional.input_tokens_details.cached_tokens,
-      },
-      output_tokens: total.output_tokens + additional.output_tokens,
-      output_tokens_details: {
-        reasoning_tokens:
-          total.output_tokens_details.reasoning_tokens +
-          additional.output_tokens_details.reasoning_tokens,
-      },
-      total_tokens: total.total_tokens + additional.total_tokens,
-    };
   }
 
   async logOutput(output: ResponseOutputItem[]): Promise<void> {
@@ -199,7 +175,31 @@ export class OpenAIClient {
   }
 }
 
-function formatInputItem(item: ResponseInputItem): string {
+/**
+ * 複数のUsageオブジェクトを累積する
+ */
+export function accumulateUsage(
+  total: ResponseUsage,
+  additional: ResponseUsage
+): ResponseUsage {
+  return {
+    input_tokens: total.input_tokens + additional.input_tokens,
+    input_tokens_details: {
+      cached_tokens:
+        total.input_tokens_details.cached_tokens +
+        additional.input_tokens_details.cached_tokens,
+    },
+    output_tokens: total.output_tokens + additional.output_tokens,
+    output_tokens_details: {
+      reasoning_tokens:
+        total.output_tokens_details.reasoning_tokens +
+        additional.output_tokens_details.reasoning_tokens,
+    },
+    total_tokens: total.total_tokens + additional.total_tokens,
+  };
+}
+
+export function formatInputItem(item: ResponseInputItem): string {
   const itemType = item.type;
   if (!itemType) {
     if ('content' in item) {
@@ -219,7 +219,7 @@ function formatInputItem(item: ResponseInputItem): string {
   return `<${itemType} />`;
 }
 
-function formatOutputItem(item: ResponseOutputItem): string {
+export function formatOutputItem(item: ResponseOutputItem): string {
   const itemType = item.type;
   if (itemType === 'message') {
     return formatMessage(item);
@@ -230,7 +230,7 @@ function formatOutputItem(item: ResponseOutputItem): string {
   return `<${item.type} />`;
 }
 
-function formatMessage(
+export function formatMessage(
   item: EasyInputMessage | ResponseInputItem.Message | ResponseOutputMessage
 ): string {
   const { role, content } = item;
@@ -259,10 +259,10 @@ function formatMessage(
     .join('\n\n');
 }
 
-function formatBlock(role: string, content: string): string {
+export function formatBlock(role: string, content: string): string {
   return `[${role}]:\n${content}`;
 }
 
-function formatFunctionCall(item: ResponseFunctionToolCall): string {
+export function formatFunctionCall(item: ResponseFunctionToolCall): string {
   return `[function call] ${item.call_id} (${item.status})\n${item.name}(${item.arguments})`;
 }
