@@ -21,8 +21,9 @@ export default defineWorkersConfig({
     watch: true, // ファイル変更を監視して自動テスト実行
     reporters: ['verbose', 'html'], // 詳細な出力とHTML レポート
     coverage: {
-      provider: 'v8',
+      provider: 'istanbul',
       reporter: ['text', 'html', 'lcov'],
+      include: ['src/**/*.ts'],
       exclude: [
         'node_modules/**',
         'dist/**',
@@ -30,6 +31,8 @@ export default defineWorkersConfig({
         'vitest.config.ts',
         '**/*.test.ts',
         '**/*.spec.ts',
+        'src/discord/api.ts',
+        'src/utils/logger.ts',
       ],
     },
     // テストのタイムアウト設定
