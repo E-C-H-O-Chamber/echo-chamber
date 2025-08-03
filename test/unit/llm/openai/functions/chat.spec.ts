@@ -152,7 +152,7 @@ describe('checkNotificationsFunction', () => {
       vi.mocked(getUnreadMessageCount).mockRejectedValue(error);
       const result = await checkNotificationsFunction.handler({}, env);
       expect(result.success).toBe(false);
-      expect(result.error).toContain(CHAT_API_ERROR);
+      expect(result.error).toBeDefined();
     });
   });
 });
@@ -179,7 +179,7 @@ describe('readChatMessagesFunction', () => {
       vi.restoreAllMocks();
     });
 
-    it('limit分だけメッセージ取得', async () => {
+    it('基本的なメッセージ取得', async () => {
       const message = {
         message: 'Hello',
         user: 'user1',
@@ -190,7 +190,14 @@ describe('readChatMessagesFunction', () => {
       const result = await readChatMessagesFunction.handler({ limit: 1 }, env);
       const expected = {
         success: true,
-        messages: [message],
+        messages: [
+          {
+            messageId: 'message-1',
+            user: 'user1',
+            message: 'Hello',
+            timestamp: '2025-01-23T04:56:07.089Z',
+          },
+        ],
       };
       expect(result).toEqual(expected);
     });
@@ -218,7 +225,57 @@ describe('readChatMessagesFunction', () => {
       const result = await readChatMessagesFunction.handler({ limit: 3 }, env);
       const expected = {
         success: true,
-        messages: messages.reverse(),
+        messages: [
+          {
+            messageId: 'message-3',
+            user: 'user3',
+            message: 'First',
+            timestamp: '2025-01-23T04:56:07.000Z',
+          },
+          {
+            messageId: 'message-2',
+            user: 'user2',
+            message: 'Second',
+            timestamp: '2025-01-23T04:56:08.000Z',
+          },
+          {
+            messageId: 'message-1',
+            user: 'user1',
+            message: 'Third',
+            timestamp: '2025-01-23T04:56:09.000Z',
+          },
+        ],
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('リアクション付きメッセージを取得', async () => {
+      const message = {
+        message: 'Hello with reactions',
+        user: 'user1',
+        timestamp: '2025-01-23T04:56:07.089Z',
+        reactions: [
+          { emoji: '👍', me: false },
+          { emoji: '😄', me: true },
+        ],
+      };
+      const mockMessages = createDiscordMessagesResponse([message]);
+      vi.mocked(getChannelMessages).mockResolvedValue(mockMessages);
+      const result = await readChatMessagesFunction.handler({ limit: 1 }, env);
+      const expected = {
+        success: true,
+        messages: [
+          {
+            messageId: 'message-1',
+            user: 'user1',
+            message: 'Hello with reactions',
+            timestamp: '2025-01-23T04:56:07.089Z',
+            reactions: [
+              { emoji: '👍', me: false },
+              { emoji: '😄', me: true },
+            ],
+          },
+        ],
       };
       expect(result).toEqual(expected);
     });
@@ -235,7 +292,7 @@ describe('readChatMessagesFunction', () => {
       vi.mocked(getChannelMessages).mockRejectedValue(error);
       const result = await readChatMessagesFunction.handler({ limit: 5 }, env);
       expect(result.success).toBe(false);
-      expect(result.error).toContain(CHAT_API_ERROR);
+      expect(result.error).toBeDefined();
     });
   });
 });
@@ -289,7 +346,7 @@ describe('sendChatMessageFunction', () => {
         env
       );
       expect(result.success).toBe(false);
-      expect(result.error).toContain(CHAT_API_ERROR);
+      expect(result.error).toBeDefined();
     });
   });
 });
@@ -355,7 +412,7 @@ describe('addReactionToChatMessageFunction', () => {
         env
       );
       expect(result.success).toBe(false);
-      expect(result.error).toContain(CHAT_API_ERROR);
+      expect(result.error).toBeDefined();
     });
   });
 });

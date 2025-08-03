@@ -6,13 +6,14 @@ import {
   getUnreadMessageCount,
   sendChannelMessage,
 } from '../../../discord';
+import { getErrorMessage } from '../../../utils/error';
 import { createLogger } from '../../../utils/logger';
 
 import { Tool } from '.';
 
 export const checkNotificationsFunction = new Tool(
   'check_notifications',
-  'Check for new notifications in the chat channel',
+  'Check for new notifications in the chat channel. Returns the unread message count.',
   {},
   async (_, env) => {
     const logger = createLogger(env);
@@ -42,12 +43,11 @@ export const checkNotificationsFunction = new Tool(
       };
     } catch (error) {
       await logger.error(
-        'Error checking notifications:',
-        error instanceof Error ? error : new Error(String(error))
+        `Error checking notifications: ${getErrorMessage(error)}`
       );
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: 'Failed to fetch notifications',
       };
     }
   }
@@ -55,9 +55,9 @@ export const checkNotificationsFunction = new Tool(
 
 export const readChatMessagesFunction = new Tool(
   'read_chat_messages',
-  'Retrieve chat messages for a specific channel',
+  'Retrieve chat messages. Returns the latest messages in ascending order by timestamp.',
   {
-    limit: z.number().min(1).describe('Number of messages to retrieve'),
+    limit: z.int().min(1).max(100).describe('Number of messages to retrieve'),
   },
   async ({ limit }, env) => {
     const logger = createLogger(env);
@@ -83,19 +83,23 @@ export const readChatMessagesFunction = new Tool(
         success: true,
         // 投稿日時の昇順
         messages: messages.reverse().map((message) => ({
+          messageId: message.id,
           user: message.author.username,
           message: message.content,
           timestamp: message.timestamp,
+          reactions: message.reactions?.map((reaction) => ({
+            emoji: reaction.emoji.name,
+            me: reaction.me,
+          })),
         })),
       };
     } catch (error) {
       await logger.error(
-        'Error reading chat messages:',
-        error instanceof Error ? error : new Error(String(error))
+        `Error reading chat messages: ${getErrorMessage(error)}`
       );
       return {
         success: false,
-        error: `Failed to read messages: ${error instanceof Error ? error.message : String(error)}`,
+        error: 'Failed to read messages',
       };
     }
   }
@@ -105,7 +109,11 @@ export const sendChatMessageFunction = new Tool(
   'send_chat_message',
   'Send a message to the chat channel',
   {
-    message: z.string().describe('Message content to send'),
+    message: z
+      .string()
+      .min(1)
+      .max(2000)
+      .describe('Message content to send. Max 2000 characters.'),
   },
   async ({ message }, env) => {
     const logger = createLogger(env);
@@ -130,12 +138,11 @@ export const sendChatMessageFunction = new Tool(
       };
     } catch (error) {
       await logger.error(
-        'Error sending chat message:',
-        error instanceof Error ? error : new Error(String(error))
+        `Error sending chat message: ${getErrorMessage(error)}`
       );
       return {
         success: false,
-        error: `Failed to send message: ${error instanceof Error ? error.message : String(error)}`,
+        error: 'Failed to send message',
       };
     }
   }
@@ -143,7 +150,7 @@ export const sendChatMessageFunction = new Tool(
 
 export const addReactionToChatMessageFunction = new Tool(
   'add_reaction_to_chat_message',
-  'Add a reaction to a specific chat message',
+  'Add a reaction to a specific chat message. The reaction must be a valid emoji string. When you react to a message, the messages up to that point are marked as read.',
   {
     messageId: z.string().describe('ID of the message to react to'),
     reaction: z.string().describe('Reaction to add, emoji string'),
@@ -174,12 +181,11 @@ export const addReactionToChatMessageFunction = new Tool(
       };
     } catch (error) {
       await logger.error(
-        'Error adding reaction to chat message:',
-        error instanceof Error ? error : new Error(String(error))
+        `Error adding reaction to chat message: ${getErrorMessage(error)}`
       );
       return {
         success: false,
-        error: `Failed to add reaction: ${error instanceof Error ? error.message : String(error)}`,
+        error: 'Failed to add reaction',
       };
     }
   }
