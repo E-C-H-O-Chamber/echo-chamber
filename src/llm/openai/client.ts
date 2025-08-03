@@ -1,6 +1,11 @@
 import OpenAI from 'openai';
+import { z } from 'zod';
 
 import { createLogger } from '../../utils/logger';
+
+import { readChatMessagesFunction } from './functions/chat';
+import { thinkDeeplyFunction } from './functions/think';
+import { getCurrentTimeFunction } from './functions/time';
 
 import type { ITool } from './functions';
 import type { Logger } from '../../utils/logger';
@@ -139,7 +144,7 @@ export class OpenAIClient {
               const contentType = c.type;
               switch (contentType) {
                 case 'output_text':
-                  return c.text;
+                  return `think: ${c.text}`;
                 case 'refusal':
                   return `*refusal: ${c.refusal}*`;
                 default:
@@ -150,7 +155,16 @@ export class OpenAIClient {
             })
             .join('\n\n');
         } else if (item.type === 'function_call') {
-          return `*${item.name}*`;
+          switch (item.name) {
+            case 'get_current_time':
+              return `*get_current_time: ${z.object(getCurrentTimeFunction.parameters).parse(JSON.parse(item.arguments)).timezone}*`;
+            case 'read_chat_messages':
+              return `*read_chat_messages: ${z.object(readChatMessagesFunction.parameters).parse(JSON.parse(item.arguments)).limit}*`;
+            case 'think_deeply':
+              return `*think_deeply: ${z.object(thinkDeeplyFunction.parameters).parse(JSON.parse(item.arguments)).thought}*`;
+            default:
+              return `*${item.name}*`;
+          }
         }
       })
       .filter((msg) => msg !== undefined)

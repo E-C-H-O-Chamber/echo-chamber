@@ -19,6 +19,8 @@ import type {
   ResponseFunctionToolCall,
 } from 'openai/resources/responses/responses';
 import { thinkDeeplyFunction } from '../../../../src/llm/openai/functions/think';
+import { getCurrentTimeFunction } from '../../../../src/llm/openai/functions/time';
+import { readChatMessagesFunction } from '../../../../src/llm/openai/functions/chat';
 
 const mockCreateResponse = vi.fn().mockResolvedValue({});
 
@@ -312,7 +314,7 @@ describe('OpenAI Client', () => {
   });
 
   describe('logOutput', () => {
-    it('ログ出力のフォーマット', () => {
+    it('ログ出力のフォーマット', async () => {
       const client = new OpenAIClient(env, [thinkDeeplyFunction]);
       const output: ResponseOutputItem[] = [
         {
@@ -329,20 +331,214 @@ describe('OpenAI Client', () => {
           ],
         },
       ];
-      client.logOutput(output);
+      await client.logOutput(output);
 
       expect(client['logger'].info).toHaveBeenCalledWith(
-        'I am fine, thank you!'
+        'think: I am fine, thank you!'
       );
       expect(client['logger'].info).toHaveBeenCalledTimes(1);
     });
 
-    it('空の出力アイテム', () => {
+    it('refusal', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const output: ResponseOutputItem[] = [
+        {
+          type: 'message',
+          role: 'assistant',
+          id: 'msg_refusal',
+          status: 'completed',
+          content: [
+            {
+              type: 'refusal',
+              refusal: 'I cannot assist with that request.',
+            },
+          ],
+        },
+      ];
+      await client.logOutput(output);
+
+      expect(client['logger'].info).toHaveBeenCalledWith(
+        '*refusal: I cannot assist with that request.*'
+      );
+      expect(client['logger'].info).toHaveBeenCalledTimes(1);
+    });
+
+    it('get_current_time', async () => {
+      const client = new OpenAIClient(env, [getCurrentTimeFunction]);
+      const output: ResponseOutputItem[] = [
+        {
+          type: 'function_call',
+          call_id: 'call_time',
+          name: 'get_current_time',
+          arguments: JSON.stringify({ timezone: 'Asia/Tokyo' }),
+          status: 'completed',
+        },
+      ];
+      await client.logOutput(output);
+
+      expect(client['logger'].info).toHaveBeenCalledWith(
+        '*get_current_time: Asia/Tokyo*'
+      );
+      expect(client['logger'].info).toHaveBeenCalledTimes(1);
+    });
+
+    it('read_chat_messages', async () => {
+      const client = new OpenAIClient(env, [readChatMessagesFunction]);
+      const output: ResponseOutputItem[] = [
+        {
+          type: 'function_call',
+          call_id: 'call_read',
+          name: 'read_chat_messages',
+          arguments: JSON.stringify({ limit: 10 }),
+          status: 'completed',
+        },
+      ];
+      await client.logOutput(output);
+
+      expect(client['logger'].info).toHaveBeenCalledWith(
+        '*read_chat_messages: 10*'
+      );
+      expect(client['logger'].info).toHaveBeenCalledTimes(1);
+    });
+
+    it('think_deeply', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const output: ResponseOutputItem[] = [
+        {
+          type: 'function_call',
+          call_id: 'call_think',
+          name: 'think_deeply',
+          arguments: JSON.stringify({ thought: 'Deep philosophical question' }),
+          status: 'completed',
+        },
+      ];
+      await client.logOutput(output);
+
+      expect(client['logger'].info).toHaveBeenCalledWith(
+        '*think_deeply: Deep philosophical question*'
+      );
+      expect(client['logger'].info).toHaveBeenCalledTimes(1);
+    });
+
+    it('デフォルトの function_call', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const output: ResponseOutputItem[] = [
+        {
+          type: 'function_call',
+          call_id: 'call_default',
+          name: 'default_function',
+          arguments: JSON.stringify({ param: 'value' }),
+          status: 'completed',
+        },
+      ];
+      await client.logOutput(output);
+
+      expect(client['logger'].info).toHaveBeenCalledWith('*default_function*');
+      expect(client['logger'].info).toHaveBeenCalledTimes(1);
+    });
+
+    it('複数のoutputアイテム', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const output: ResponseOutputItem[] = [
+        {
+          type: 'message',
+          role: 'assistant',
+          id: 'msg_1',
+          status: 'completed',
+          content: [
+            {
+              type: 'output_text',
+              text: 'First message',
+              annotations: [],
+            },
+          ],
+        },
+        {
+          type: 'function_call',
+          call_id: 'call_think',
+          name: 'think_deeply',
+          arguments: JSON.stringify({ thought: 'Some thought' }),
+          status: 'completed',
+        },
+      ];
+      await client.logOutput(output);
+
+      expect(client['logger'].info).toHaveBeenCalledWith(
+        'think: First message\n\n*think_deeply: Some thought*'
+      );
+      expect(client['logger'].info).toHaveBeenCalledTimes(1);
+    });
+
+    it('複数のcontentを持つメッセージ', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const output: ResponseOutputItem[] = [
+        {
+          type: 'message',
+          role: 'assistant',
+          id: 'msg_multi',
+          status: 'completed',
+          content: [
+            {
+              type: 'output_text',
+              text: 'First part',
+              annotations: [],
+            },
+            {
+              type: 'output_text',
+              text: 'Second part',
+              annotations: [],
+            },
+          ],
+        },
+      ];
+      await client.logOutput(output);
+
+      expect(client['logger'].info).toHaveBeenCalledWith(
+        'think: First part\n\nthink: Second part'
+      );
+      expect(client['logger'].info).toHaveBeenCalledTimes(1);
+    });
+
+    it('空の出力アイテム', async () => {
       const client = new OpenAIClient(env, [thinkDeeplyFunction]);
       const output: ResponseOutputItem[] = [];
-      client.logOutput(output);
+      await client.logOutput(output);
 
       expect(client['logger'].info).toHaveBeenCalledTimes(0);
+    });
+
+    it('空になるログ出力', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      // undefinedを返すoutputアイテムを作る
+      const output: ResponseOutputItem[] = [
+        {
+          type: 'unknown_type',
+        } as unknown as ResponseOutputItem,
+      ];
+      await client.logOutput(output);
+
+      expect(client['logger'].info).toHaveBeenCalledTimes(0);
+    });
+
+    it('予期しないcontentTypeでエラーが投げられる', async () => {
+      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const output: ResponseOutputItem[] = [
+        {
+          type: 'message',
+          role: 'assistant',
+          id: 'msg_error',
+          status: 'completed',
+          content: [
+            {
+              type: 'unknown_content_type',
+            } as any,
+          ],
+        },
+      ];
+
+      await expect(client.logOutput(output)).rejects.toThrow(
+        'Unexpected contentType: unknown_content_type'
+      );
     });
   });
 });

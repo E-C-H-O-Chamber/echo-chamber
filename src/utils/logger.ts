@@ -27,6 +27,10 @@ export class Logger {
     };
   }
 
+  get level(): LogLevel {
+    return this.config.level;
+  }
+
   async debug(message: string): Promise<void> {
     await this.log('debug', message);
   }

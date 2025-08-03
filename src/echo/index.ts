@@ -62,6 +62,7 @@ export class Echo extends DurableObject<Env> {
               usage.total_tokens,
             ])
           ),
+          logLevel: this.logger.level,
         });
       })
       .post('/wake', async (c) => {
