@@ -110,9 +110,42 @@ test/
 
 ### TDD Workflow
 
-1. **Red**: Write failing test first (`pnpm tdd` provides real-time feedback)
-2. **Green**: Write minimal code to pass the test
-3. **Refactor**: Improve code while maintaining test coverage
+**CRITICAL**: このプロジェクトでは厳格なt-wada式TDDプロセスを遵守する。
+
+#### TodoWriteツールによる強制管理
+
+仕様変更・新機能開発時は**必ず**以下のタスクテンプレートをTodoWriteで設定：
+
+```
+- 🔴 Red: 失敗するテストを書く
+- ✅ テスト実行して失敗確認 (pnpm test:run)
+- 🟢 Green: 最小限実装でテストを通す
+- ✅ テスト実行して成功確認 (pnpm test:run)
+- 🔵 Refactor: 必要に応じてリファクタリング
+```
+
+#### 必須プロセス
+
+1. **🔴 Red**: 失敗するテストを書く
+
+   - 実装前に**必ずテスト実行**して赤を確認
+   - 一度に一つの変更のみ
+
+2. **🟢 Green**: 最小限の実装でテストを通す
+
+   - テスト実行して緑を確認
+   - 過度な実装は禁止（最小限で止める）
+
+3. **🔵 Refactor**: コード品質向上（必要時のみ）
+   - テストを壊さない範囲で改善
+   - 品質チェック実行必須
+
+#### 絶対禁止事項
+
+❌ **テストと実装の同時変更**  
+❌ **Redフェーズのスキップ**  
+❌ **テスト実行せずに次ステップへ進む**  
+❌ **一度に複数の変更**
 
 ### Characterization Tests
 

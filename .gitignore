@@ -171,5 +171,8 @@ dist
 .dev.vars
 .wrangler/
 
+# Serena
+.serena/cache/
+
 # Vitest
 html/

@@ -2,5 +2,9 @@
   "files.associations": {
     "wrangler.json": "jsonc"
   },
-  "cSpell.words": ["tsparser"]
+  "cSpell.words": ["tsparser"],
+  "markdownlint.config": {
+    "no-emphasis-as-heading": false,
+    "fenced-code-language": false
+  }
 }
