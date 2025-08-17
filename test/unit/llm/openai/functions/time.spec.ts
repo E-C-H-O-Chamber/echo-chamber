@@ -42,7 +42,7 @@ describe('getCurrentTimeFunction', () => {
       );
       const expected = {
         success: true,
-        timestamp: '2025-01-23T04:56:07.089Z',
+        current_time: '2025/01/23 04:56:07',
         timezone: 'UTC',
       };
       expect(result).toEqual(expected);
@@ -55,7 +55,7 @@ describe('getCurrentTimeFunction', () => {
       );
       const expected = {
         success: true,
-        timestamp: '2025-01-23T13:56:07.089+09:00',
+        current_time: '2025/01/23 13:56:07',
         timezone: 'Asia/Tokyo',
       };
       expect(result).toEqual(expected);

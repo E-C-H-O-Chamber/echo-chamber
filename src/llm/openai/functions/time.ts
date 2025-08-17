@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { formatDatetime } from '../../../utils/datetime';
+import { getErrorMessage } from '../../../utils/error';
+
 import { Tool } from '.';
 
 export const getCurrentTimeFunction = new Tool(
@@ -13,26 +16,17 @@ export const getCurrentTimeFunction = new Tool(
       .describe('Timezone identifier (e.g., "Asia/Tokyo", "UTC")'),
   },
   ({ timezone }) => {
-    const now = new Date();
-    const timeString =
-      timezone === 'UTC' ? now.toISOString() : toIsoStringWithTimezone(now);
-
-    return {
-      success: true,
-      timestamp: timeString,
-      timezone,
-    };
+    try {
+      return {
+        success: true,
+        current_time: formatDatetime(new Date(), timezone),
+        timezone,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to format date: ${getErrorMessage(error)}`,
+      };
+    }
   }
 );
-
-function toIsoStringWithTimezone(date: Date): string {
-  const tzo = -date.getTimezoneOffset();
-  const dif = tzo >= 0 ? '+' : '-';
-  const pad = (num: number, size = 2): string =>
-    `${'0'.repeat(size - 1)}${num}`.slice(-size);
-  const dateString = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  const timeString = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`;
-  const timezoneOffset = `${dif}${pad(Math.floor(Math.abs(tzo) / 60))}:${pad(Math.abs(tzo) % 60)}`;
-
-  return `${dateString}T${timeString}${timezoneOffset}`;
-}
