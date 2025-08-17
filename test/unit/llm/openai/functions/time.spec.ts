@@ -1,6 +1,6 @@
-import { env } from 'cloudflare:test';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { getCurrentTimeFunction } from '../../../../../src/llm/openai/functions/time';
+import { mockToolContext } from '../../../../mocks/tool';
 
 describe('getCurrentTimeFunction', () => {
   beforeAll(() => {
@@ -35,7 +35,10 @@ describe('getCurrentTimeFunction', () => {
 
   describe('handler', () => {
     it('UTC timezone', () => {
-      const result = getCurrentTimeFunction.handler({ timezone: 'UTC' }, env);
+      const result = getCurrentTimeFunction.handler(
+        { timezone: 'UTC' },
+        mockToolContext
+      );
       const expected = {
         success: true,
         timestamp: '2025-01-23T04:56:07.089Z',
@@ -47,7 +50,7 @@ describe('getCurrentTimeFunction', () => {
     it('Asia/Tokyo timezone', () => {
       const result = getCurrentTimeFunction.handler(
         { timezone: 'Asia/Tokyo' },
-        env
+        mockToolContext
       );
       const expected = {
         success: true,

@@ -1,4 +1,3 @@
-import { env } from 'cloudflare:test';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   addReactionToChatMessageFunction,
@@ -13,19 +12,10 @@ import {
   sendChannelMessage,
 } from '../../../../../src/discord';
 import { createDiscordMessagesResponse } from '../../../../helpers/discord';
+import { mockToolContext } from '../../../../mocks/tool';
 
 const CHAT_UNAVAILABLE_ERROR = 'Chat tool is currently unavailable.';
 const CHAT_API_ERROR = 'Chat API error';
-
-const mockKV = {
-  get: vi.fn(),
-  put: vi.fn(),
-  delete: vi.fn(),
-  list: vi.fn(),
-  getWithMetadata: vi.fn(),
-};
-
-env.ECHO_KV = mockKV;
 
 vi.mock('../../../../../src/discord', async (importOriginal) => {
   const actual =
@@ -59,7 +49,10 @@ describe('checkNotificationsFunction', () => {
     it('0件', async () => {
       const unreadCount = 0;
       vi.mocked(getUnreadMessageCount).mockResolvedValue(unreadCount);
-      const result = await checkNotificationsFunction.handler({}, env);
+      const result = await checkNotificationsFunction.handler(
+        {},
+        mockToolContext
+      );
       const expected = {
         success: true,
         notifications: {
@@ -73,7 +66,10 @@ describe('checkNotificationsFunction', () => {
     it('1件', async () => {
       const unreadCount = 1;
       vi.mocked(getUnreadMessageCount).mockResolvedValue(unreadCount);
-      const result = await checkNotificationsFunction.handler({}, env);
+      const result = await checkNotificationsFunction.handler(
+        {},
+        mockToolContext
+      );
       const expected = {
         success: true,
         notifications: {
@@ -87,7 +83,10 @@ describe('checkNotificationsFunction', () => {
     it('10件', async () => {
       const unreadCount = 10;
       vi.mocked(getUnreadMessageCount).mockResolvedValue(unreadCount);
-      const result = await checkNotificationsFunction.handler({}, env);
+      const result = await checkNotificationsFunction.handler(
+        {},
+        mockToolContext
+      );
       const expected = {
         success: true,
         notifications: {
@@ -101,7 +100,10 @@ describe('checkNotificationsFunction', () => {
     it('99件', async () => {
       const unreadCount = 99;
       vi.mocked(getUnreadMessageCount).mockResolvedValue(unreadCount);
-      const result = await checkNotificationsFunction.handler({}, env);
+      const result = await checkNotificationsFunction.handler(
+        {},
+        mockToolContext
+      );
       const expected = {
         success: true,
         notifications: {
@@ -115,7 +117,10 @@ describe('checkNotificationsFunction', () => {
     it('100件 (99+)', async () => {
       const unreadCount = 100;
       vi.mocked(getUnreadMessageCount).mockResolvedValue(unreadCount);
-      const result = await checkNotificationsFunction.handler({}, env);
+      const result = await checkNotificationsFunction.handler(
+        {},
+        mockToolContext
+      );
       const expected = {
         success: true,
         notifications: {
@@ -129,7 +134,10 @@ describe('checkNotificationsFunction', () => {
     it('200件 (99+)', async () => {
       const unreadCount = 200;
       vi.mocked(getUnreadMessageCount).mockResolvedValue(unreadCount);
-      const result = await checkNotificationsFunction.handler({}, env);
+      const result = await checkNotificationsFunction.handler(
+        {},
+        mockToolContext
+      );
       const expected = {
         success: true,
         notifications: {
@@ -141,8 +149,11 @@ describe('checkNotificationsFunction', () => {
     });
 
     it('チャンネルIDが存在しない', async () => {
-      mockKV.get.mockResolvedValue(null);
-      const result = await checkNotificationsFunction.handler({}, env);
+      mockToolContext.store.get.mockResolvedValue(null);
+      const result = await checkNotificationsFunction.handler(
+        {},
+        mockToolContext
+      );
       expect(result.success).toBe(false);
       expect(result.error).toBe(CHAT_UNAVAILABLE_ERROR);
     });
@@ -150,7 +161,10 @@ describe('checkNotificationsFunction', () => {
     it('getUnreadMessageCount エラー', async () => {
       const error = new Error(CHAT_API_ERROR);
       vi.mocked(getUnreadMessageCount).mockRejectedValue(error);
-      const result = await checkNotificationsFunction.handler({}, env);
+      const result = await checkNotificationsFunction.handler(
+        {},
+        mockToolContext
+      );
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -187,7 +201,10 @@ describe('readChatMessagesFunction', () => {
       };
       const mockMessages = createDiscordMessagesResponse([message]);
       vi.mocked(getChannelMessages).mockResolvedValue(mockMessages);
-      const result = await readChatMessagesFunction.handler({ limit: 1 }, env);
+      const result = await readChatMessagesFunction.handler(
+        { limit: 1 },
+        mockToolContext
+      );
       const expected = {
         success: true,
         messages: [
@@ -222,7 +239,10 @@ describe('readChatMessagesFunction', () => {
       ];
       const mockMessages = createDiscordMessagesResponse(messages);
       vi.mocked(getChannelMessages).mockResolvedValue(mockMessages);
-      const result = await readChatMessagesFunction.handler({ limit: 3 }, env);
+      const result = await readChatMessagesFunction.handler(
+        { limit: 3 },
+        mockToolContext
+      );
       const expected = {
         success: true,
         messages: [
@@ -261,7 +281,10 @@ describe('readChatMessagesFunction', () => {
       };
       const mockMessages = createDiscordMessagesResponse([message]);
       vi.mocked(getChannelMessages).mockResolvedValue(mockMessages);
-      const result = await readChatMessagesFunction.handler({ limit: 1 }, env);
+      const result = await readChatMessagesFunction.handler(
+        { limit: 1 },
+        mockToolContext
+      );
       const expected = {
         success: true,
         messages: [
@@ -281,8 +304,11 @@ describe('readChatMessagesFunction', () => {
     });
 
     it('チャンネルIDが存在しない', async () => {
-      mockKV.get.mockResolvedValue(null);
-      const result = await readChatMessagesFunction.handler({ limit: 10 }, env);
+      mockToolContext.store.get.mockResolvedValue(null);
+      const result = await readChatMessagesFunction.handler(
+        { limit: 1 },
+        mockToolContext
+      );
       expect(result.success).toBe(false);
       expect(result.error).toBe(CHAT_UNAVAILABLE_ERROR);
     });
@@ -290,7 +316,10 @@ describe('readChatMessagesFunction', () => {
     it('getChannelMessages エラー', async () => {
       const error = new Error(CHAT_API_ERROR);
       vi.mocked(getChannelMessages).mockRejectedValue(error);
-      const result = await readChatMessagesFunction.handler({ limit: 5 }, env);
+      const result = await readChatMessagesFunction.handler(
+        { limit: 1 },
+        mockToolContext
+      );
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
@@ -321,7 +350,10 @@ describe('sendChatMessageFunction', () => {
 
     it('メッセージ送信成功', async () => {
       const message = 'Hello';
-      const result = await sendChatMessageFunction.handler({ message }, env);
+      const result = await sendChatMessageFunction.handler(
+        { message },
+        mockToolContext
+      );
       const expected = {
         success: true,
       };
@@ -329,10 +361,10 @@ describe('sendChatMessageFunction', () => {
     });
 
     it('チャンネルIDが存在しない', async () => {
-      mockKV.get.mockResolvedValue(null);
+      mockToolContext.store.get.mockResolvedValue(null);
       const result = await sendChatMessageFunction.handler(
         { message: 'Hello' },
-        env
+        mockToolContext
       );
       expect(result.success).toBe(false);
       expect(result.error).toBe(CHAT_UNAVAILABLE_ERROR);
@@ -343,7 +375,7 @@ describe('sendChatMessageFunction', () => {
       vi.mocked(sendChannelMessage).mockRejectedValue(error);
       const result = await sendChatMessageFunction.handler(
         { message: 'Hello' },
-        env
+        mockToolContext
       );
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
@@ -385,7 +417,7 @@ describe('addReactionToChatMessageFunction', () => {
 
       const result = await addReactionToChatMessageFunction.handler(
         { messageId: '123456789', reaction: '👍' },
-        env
+        mockToolContext
       );
 
       const expected = {
@@ -395,10 +427,10 @@ describe('addReactionToChatMessageFunction', () => {
     });
 
     it('チャンネルIDが存在しない', async () => {
-      mockKV.get.mockResolvedValue(null);
+      mockToolContext.store.get.mockResolvedValue(null);
       const result = await addReactionToChatMessageFunction.handler(
         { messageId: '123456789', reaction: '👍' },
-        env
+        mockToolContext
       );
       expect(result.success).toBe(false);
       expect(result.error).toBe(CHAT_UNAVAILABLE_ERROR);
@@ -409,7 +441,7 @@ describe('addReactionToChatMessageFunction', () => {
       vi.mocked(addReactionToMessage).mockRejectedValue(error);
       const result = await addReactionToChatMessageFunction.handler(
         { messageId: '123456789', reaction: '👍' },
-        env
+        mockToolContext
       );
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();

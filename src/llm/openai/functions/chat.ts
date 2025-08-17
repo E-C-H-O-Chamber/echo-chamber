@@ -7,7 +7,6 @@ import {
   sendChannelMessage,
 } from '../../../discord';
 import { getErrorMessage } from '../../../utils/error';
-import { createLogger } from '../../../utils/logger';
 
 import { Tool } from '.';
 
@@ -15,12 +14,11 @@ export const checkNotificationsFunction = new Tool(
   'check_notifications',
   'Check for new notifications in the chat channel. Returns the unread message count.',
   {},
-  async (_, env) => {
-    const logger = createLogger(env);
+  async (_, ctx) => {
     try {
-      const channelId = await env.ECHO_KV.get('chat_channel_discord_rin');
+      const channelId = await ctx.store.get('chat_channel_discord_rin');
       if (channelId === null) {
-        await logger.error(
+        await ctx.logger.error(
           'Chat channel ID not found in environment variables.'
         );
         return {
@@ -30,7 +28,7 @@ export const checkNotificationsFunction = new Tool(
       }
 
       const unreadCount = await getUnreadMessageCount(
-        env.DISCORD_BOT_TOKEN_RIN,
+        ctx.discordBotToken,
         channelId
       );
 
@@ -42,7 +40,7 @@ export const checkNotificationsFunction = new Tool(
         },
       };
     } catch (error) {
-      await logger.error(
+      await ctx.logger.error(
         `Error checking notifications: ${getErrorMessage(error)}`
       );
       return {
@@ -59,12 +57,11 @@ export const readChatMessagesFunction = new Tool(
   {
     limit: z.int().min(1).max(100).describe('Number of messages to retrieve'),
   },
-  async ({ limit }, env) => {
-    const logger = createLogger(env);
+  async ({ limit }, ctx) => {
     try {
-      const channelId = await env.ECHO_KV.get('chat_channel_discord_rin');
+      const channelId = await ctx.store.get('chat_channel_discord_rin');
       if (channelId === null) {
-        await logger.error(
+        await ctx.logger.error(
           'Chat channel ID not found in environment variables.'
         );
         return {
@@ -74,7 +71,7 @@ export const readChatMessagesFunction = new Tool(
       }
 
       const messages = await getChannelMessages(
-        env.DISCORD_BOT_TOKEN_RIN,
+        ctx.discordBotToken,
         channelId,
         { limit }
       );
@@ -94,7 +91,7 @@ export const readChatMessagesFunction = new Tool(
         })),
       };
     } catch (error) {
-      await logger.error(
+      await ctx.logger.error(
         `Error reading chat messages: ${getErrorMessage(error)}`
       );
       return {
@@ -115,12 +112,11 @@ export const sendChatMessageFunction = new Tool(
       .max(2000)
       .describe('Message content to send. Max 2000 characters.'),
   },
-  async ({ message }, env) => {
-    const logger = createLogger(env);
+  async ({ message }, ctx) => {
     try {
-      const channelId = await env.ECHO_KV.get('chat_channel_discord_rin');
+      const channelId = await ctx.store.get('chat_channel_discord_rin');
       if (channelId === null) {
-        await logger.error(
+        await ctx.logger.error(
           'Chat channel ID not found in environment variables.'
         );
         return {
@@ -129,7 +125,7 @@ export const sendChatMessageFunction = new Tool(
         };
       }
 
-      await sendChannelMessage(env.DISCORD_BOT_TOKEN_RIN, channelId, {
+      await sendChannelMessage(ctx.discordBotToken, channelId, {
         content: message,
       });
 
@@ -137,7 +133,7 @@ export const sendChatMessageFunction = new Tool(
         success: true,
       };
     } catch (error) {
-      await logger.error(
+      await ctx.logger.error(
         `Error sending chat message: ${getErrorMessage(error)}`
       );
       return {
@@ -155,12 +151,11 @@ export const addReactionToChatMessageFunction = new Tool(
     messageId: z.string().describe('ID of the message to react to'),
     reaction: z.string().describe('Reaction to add, emoji string'),
   },
-  async ({ messageId, reaction }, env) => {
-    const logger = createLogger(env);
+  async ({ messageId, reaction }, ctx) => {
     try {
-      const channelId = await env.ECHO_KV.get('chat_channel_discord_rin');
+      const channelId = await ctx.store.get('chat_channel_discord_rin');
       if (channelId === null) {
-        await logger.error(
+        await ctx.logger.error(
           'Chat channel ID not found in environment variables.'
         );
         return {
@@ -170,7 +165,7 @@ export const addReactionToChatMessageFunction = new Tool(
       }
 
       await addReactionToMessage(
-        env.DISCORD_BOT_TOKEN_RIN,
+        ctx.discordBotToken,
         channelId,
         messageId,
         reaction
@@ -180,7 +175,7 @@ export const addReactionToChatMessageFunction = new Tool(
         success: true,
       };
     } catch (error) {
-      await logger.error(
+      await ctx.logger.error(
         `Error adding reaction to chat message: ${getErrorMessage(error)}`
       );
       return {

@@ -1,6 +1,7 @@
-import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
+
 import { thinkDeeplyFunction } from '../../../../../src/llm/openai/functions/think';
+import { mockToolContext } from '../../../../mocks/tool';
 
 describe('thinkDeeplyFunction', () => {
   it('name', () => {
@@ -26,7 +27,7 @@ describe('thinkDeeplyFunction', () => {
     it('thought', () => {
       const result = thinkDeeplyFunction.handler(
         { thought: 'What is the meaning of life?' },
-        env
+        mockToolContext
       );
       const expected = {
         success: true,
