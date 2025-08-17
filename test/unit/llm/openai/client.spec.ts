@@ -541,6 +541,22 @@ describe('formatLogOutput', () => {
     );
   });
 
+  it('store_context', () => {
+    const output: ResponseOutputItem[] = [
+      {
+        type: 'function_call',
+        call_id: 'call_store',
+        name: 'store_context',
+        arguments: JSON.stringify({ context: 'Important context data' }),
+        status: 'completed',
+      },
+    ];
+
+    expect(formatLogOutput(output)).toBe(
+      '*store_context: Important context data*'
+    );
+  });
+
   it('デフォルトの function_call', () => {
     const output: ResponseOutputItem[] = [
       {

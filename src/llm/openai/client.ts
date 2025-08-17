@@ -5,6 +5,7 @@ import { getErrorMessage } from '../../utils/error';
 import { createLogger } from '../../utils/logger';
 
 import { readChatMessagesFunction } from './functions/chat';
+import { storeContextFunction } from './functions/context';
 import { thinkDeeplyFunction } from './functions/think';
 import { getCurrentTimeFunction } from './functions/time';
 
@@ -197,6 +198,8 @@ export function formatLogOutput(output: ResponseOutputItem[]): string {
             return `*read_chat_messages: ${z.object(readChatMessagesFunction.parameters).parse(JSON.parse(item.arguments)).limit}*`;
           case 'think_deeply':
             return `*think_deeply: ${z.object(thinkDeeplyFunction.parameters).parse(JSON.parse(item.arguments)).thought}*`;
+          case 'store_context':
+            return `*store_context: ${z.object(storeContextFunction.parameters).parse(JSON.parse(item.arguments)).context}*`;
           default:
             return `*${item.name}*`;
         }
