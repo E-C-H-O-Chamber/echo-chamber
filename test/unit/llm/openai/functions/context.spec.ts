@@ -67,7 +67,9 @@ describe('Context Functions', () => {
       });
 
       it('storage.putでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.put.mockRejectedValue(new Error('Storage error'));
+        mockToolContext.storage.put.mockRejectedValue(
+          new Error('Storage error')
+        );
 
         const args = { context: 'test content' };
         const result = await storeContextFunction.handler(
@@ -103,7 +105,10 @@ describe('Context Functions', () => {
         mockToolContext.storage.get.mockResolvedValue('saved context content');
 
         const args = {};
-        const result = await recallContextFunction.handler(args, mockToolContext);
+        const result = await recallContextFunction.handler(
+          args,
+          mockToolContext
+        );
 
         expect(mockToolContext.storage.get).toHaveBeenCalledWith('context');
         expect(result).toEqual({
@@ -116,7 +121,10 @@ describe('Context Functions', () => {
         mockToolContext.storage.get.mockResolvedValue('');
 
         const args = {};
-        const result = await recallContextFunction.handler(args, mockToolContext);
+        const result = await recallContextFunction.handler(
+          args,
+          mockToolContext
+        );
 
         expect(mockToolContext.storage.get).toHaveBeenCalledWith('context');
         expect(result).toEqual({
@@ -129,7 +137,10 @@ describe('Context Functions', () => {
         mockToolContext.storage.get.mockResolvedValue(undefined);
 
         const args = {};
-        const result = await recallContextFunction.handler(args, mockToolContext);
+        const result = await recallContextFunction.handler(
+          args,
+          mockToolContext
+        );
 
         expect(mockToolContext.storage.get).toHaveBeenCalledWith('context');
         expect(result).toEqual({
@@ -139,10 +150,15 @@ describe('Context Functions', () => {
       });
 
       it('storage.getでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.get.mockRejectedValue(new Error('Storage error'));
+        mockToolContext.storage.get.mockRejectedValue(
+          new Error('Storage error')
+        );
 
         const args = {};
-        const result = await recallContextFunction.handler(args, mockToolContext);
+        const result = await recallContextFunction.handler(
+          args,
+          mockToolContext
+        );
 
         expect(result).toEqual({
           success: false,

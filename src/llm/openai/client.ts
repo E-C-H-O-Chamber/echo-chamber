@@ -31,11 +31,7 @@ export class OpenAIClient {
   private readonly logger: Logger;
   private previousResponseId: string | undefined;
 
-  constructor(
-    env: Env,
-    tools: ITool[] = [],
-    toolContext: ToolContext,
-  ) {
+  constructor(env: Env, tools: ITool[] = [], toolContext: ToolContext) {
     this.client = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
     });
@@ -85,10 +81,7 @@ export class OpenAIClient {
     }
 
     try {
-      return await tool.execute(
-        functionCall.arguments,
-        this.toolContext
-      );
+      return await tool.execute(functionCall.arguments, this.toolContext);
     } catch (error) {
       return JSON.stringify({
         success: false,

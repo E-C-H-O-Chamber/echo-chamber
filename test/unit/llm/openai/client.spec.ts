@@ -46,10 +46,12 @@ describe('OpenAI Client', () => {
       [thinkDeeplyFunction],
       mockToolContext
     );
-    const input = [{
-      role: 'user' as const,
-      content: 'Hello, how are you?',
-    }];
+    const input = [
+      {
+        role: 'user' as const,
+        content: 'Hello, how are you?',
+      },
+    ];
     mockCreateResponse.mockResolvedValue({});
     await client.createResponse(input);
     expect(mockCreateResponse).toHaveBeenCalledWith({
@@ -142,11 +144,7 @@ describe('OpenAI Client', () => {
           throw new Error('Function execution error');
         },
       } as const;
-      const client = new OpenAIClient(
-        env,
-        [errorFunction],
-        mockToolContext
-      );
+      const client = new OpenAIClient(env, [errorFunction], mockToolContext);
       const result = await client.executeFunction({
         type: 'function_call',
         name: 'error_function',
@@ -467,9 +465,7 @@ describe('formatLogOutput', () => {
       },
     ];
 
-    expect(formatLogOutput(output)).toBe(
-      'think: I am fine, thank you!'
-    );
+    expect(formatLogOutput(output)).toBe('think: I am fine, thank you!');
   });
 
   it('refusal', () => {
@@ -504,9 +500,7 @@ describe('formatLogOutput', () => {
       },
     ];
 
-    expect(formatLogOutput(output)).toBe(
-      '*get_current_time: Asia/Tokyo*'
-    );
+    expect(formatLogOutput(output)).toBe('*get_current_time: Asia/Tokyo*');
   });
 
   it('read_chat_messages', () => {
@@ -520,9 +514,7 @@ describe('formatLogOutput', () => {
       },
     ];
 
-    expect(formatLogOutput(output)).toBe(
-      '*read_chat_messages: 10*'
-    );
+    expect(formatLogOutput(output)).toBe('*read_chat_messages: 10*');
   });
 
   it('think_deeply', () => {

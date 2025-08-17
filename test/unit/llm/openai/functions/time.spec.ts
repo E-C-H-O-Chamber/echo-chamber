@@ -81,7 +81,8 @@ describe('getCurrentTimeFunction', () => {
       );
       expect(result).toEqual({
         success: false,
-        error: 'Failed to format date: Invalid time zone specified: Invalid/Timezone',
+        error:
+          'Failed to format date: Invalid time zone specified: Invalid/Timezone',
       });
     });
   });
