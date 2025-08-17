@@ -113,7 +113,10 @@ export class OpenAIClient {
     }
 
     await this.logger.debug(response.output.map(formatOutputItem).join('\n\n'));
-    await this.logOutput(response.output);
+    const logOutput = formatLogOutput(response.output);
+    if (logOutput.length > 0) {
+      await this.logger.info(logOutput);
+    }
 
     // 現在のレスポンスのusageを取得
     let totalUsage: ResponseUsage = response.usage ?? {
@@ -141,47 +144,6 @@ export class OpenAIClient {
 
     return totalUsage;
   }
-
-  async logOutput(output: ResponseOutputItem[]): Promise<void> {
-    const logMessage = output
-      .map((item) => {
-        if (item.type === 'message') {
-          return item.content
-            .map((c) => {
-              const contentType = c.type;
-              switch (contentType) {
-                case 'output_text':
-                  return `think: ${c.text}`;
-                case 'refusal':
-                  return `*refusal: ${c.refusal}*`;
-                default:
-                  throw new Error(
-                    `Unexpected contentType: ${contentType satisfies never}`
-                  );
-              }
-            })
-            .join('\n\n');
-        } else if (item.type === 'function_call') {
-          switch (item.name) {
-            case 'get_current_time':
-              return `*get_current_time: ${z.object(getCurrentTimeFunction.parameters).parse(JSON.parse(item.arguments)).timezone}*`;
-            case 'read_chat_messages':
-              return `*read_chat_messages: ${z.object(readChatMessagesFunction.parameters).parse(JSON.parse(item.arguments)).limit}*`;
-            case 'think_deeply':
-              return `*think_deeply: ${z.object(thinkDeeplyFunction.parameters).parse(JSON.parse(item.arguments)).thought}*`;
-            default:
-              return `*${item.name}*`;
-          }
-        }
-      })
-      .filter((msg) => msg !== undefined)
-      .join('\n\n');
-
-    // 空文字列の場合はログ出力をスキップ
-    if (logMessage.trim().length > 0) {
-      await this.logger.info(logMessage);
-    }
-  }
 }
 
 /**
@@ -206,6 +168,43 @@ export function accumulateUsage(
     },
     total_tokens: total.total_tokens + additional.total_tokens,
   };
+}
+
+export function formatLogOutput(output: ResponseOutputItem[]): string {
+  return output
+    .map((item) => {
+      if (item.type === 'message') {
+        return item.content
+          .map((c) => {
+            const contentType = c.type;
+            switch (contentType) {
+              case 'output_text':
+                return `think: ${c.text}`;
+              case 'refusal':
+                return `*refusal: ${c.refusal}*`;
+              default:
+                throw new Error(
+                  `Unexpected contentType: ${contentType satisfies never}`
+                );
+            }
+          })
+          .join('\n\n');
+      } else if (item.type === 'function_call') {
+        switch (item.name) {
+          case 'get_current_time':
+            return `*get_current_time: ${z.object(getCurrentTimeFunction.parameters).parse(JSON.parse(item.arguments)).timezone}*`;
+          case 'read_chat_messages':
+            return `*read_chat_messages: ${z.object(readChatMessagesFunction.parameters).parse(JSON.parse(item.arguments)).limit}*`;
+          case 'think_deeply':
+            return `*think_deeply: ${z.object(thinkDeeplyFunction.parameters).parse(JSON.parse(item.arguments)).thought}*`;
+          default:
+            return `*${item.name}*`;
+        }
+      }
+    })
+    .filter((msg) => msg !== undefined)
+    .join('\n\n')
+    .trim();
 }
 
 export function formatInputItem(item: ResponseInputItem): string {
