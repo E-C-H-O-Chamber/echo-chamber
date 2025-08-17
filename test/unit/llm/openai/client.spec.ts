@@ -549,6 +549,70 @@ describe('formatLogOutput', () => {
     );
   });
 
+  it('create_task', () => {
+    const output: ResponseOutputItem[] = [
+      {
+        type: 'function_call',
+        call_id: 'call_create',
+        name: 'create_task',
+        arguments: JSON.stringify({
+          name: 'New Task',
+          content: 'Task content goes here',
+          execution_time: '2025-08-07T12:00:00Z',
+        }),
+        status: 'completed',
+      },
+    ];
+
+    expect(formatLogOutput(output)).toBe('*create_task: New Task*');
+  });
+
+  it('update_task', () => {
+    const output: ResponseOutputItem[] = [
+      {
+        type: 'function_call',
+        call_id: 'call_update',
+        name: 'update_task',
+        arguments: JSON.stringify({
+          name: 'Updated Task',
+          content: 'Updated task content',
+          execution_time: '2025-08-07T12:00:00Z',
+        }),
+        status: 'completed',
+      },
+    ];
+
+    expect(formatLogOutput(output)).toBe('*update_task: Updated Task*');
+  });
+
+  it('delete_task', () => {
+    const output: ResponseOutputItem[] = [
+      {
+        type: 'function_call',
+        call_id: 'call_delete',
+        name: 'delete_task',
+        arguments: JSON.stringify({ name: 'Task to Delete' }),
+        status: 'completed',
+      },
+    ];
+
+    expect(formatLogOutput(output)).toBe('*delete_task: Task to Delete*');
+  });
+
+  it('complete_task', () => {
+    const output: ResponseOutputItem[] = [
+      {
+        type: 'function_call',
+        call_id: 'call_complete',
+        name: 'complete_task',
+        arguments: JSON.stringify({ name: 'Task to Complete' }),
+        status: 'completed',
+      },
+    ];
+
+    expect(formatLogOutput(output)).toBe('*complete_task: Task to Complete*');
+  });
+
   it('デフォルトの function_call', () => {
     const output: ResponseOutputItem[] = [
       {

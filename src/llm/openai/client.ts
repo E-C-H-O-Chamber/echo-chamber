@@ -6,6 +6,12 @@ import { createLogger } from '../../utils/logger';
 
 import { readChatMessagesFunction } from './functions/chat';
 import { storeContextFunction } from './functions/context';
+import {
+  completeTaskFunction,
+  createTaskFunction,
+  deleteTaskFunction,
+  updateTaskFunction,
+} from './functions/task';
 import { thinkDeeplyFunction } from './functions/think';
 import { getCurrentTimeFunction } from './functions/time';
 
@@ -184,23 +190,35 @@ export function formatLogOutput(output: ResponseOutputItem[]): string {
           })
           .join('\n\n');
       } else if (item.type === 'function_call') {
-        switch (item.name) {
-          case 'get_current_time':
-            return `*get_current_time: ${z.object(getCurrentTimeFunction.parameters).parse(JSON.parse(item.arguments)).timezone}*`;
-          case 'read_chat_messages':
-            return `*read_chat_messages: ${z.object(readChatMessagesFunction.parameters).parse(JSON.parse(item.arguments)).limit}*`;
-          case 'think_deeply':
-            return `*think_deeply: ${z.object(thinkDeeplyFunction.parameters).parse(JSON.parse(item.arguments)).thought}*`;
-          case 'store_context':
-            return `*store_context: ${z.object(storeContextFunction.parameters).parse(JSON.parse(item.arguments)).context}*`;
-          default:
-            return `*${item.name}*`;
-        }
+        return formatFunctionCallLogOutput(item);
       }
     })
     .filter((msg) => msg !== undefined)
     .join('\n\n')
     .trim();
+}
+
+function formatFunctionCallLogOutput(item: ResponseFunctionToolCall): string {
+  switch (item.name) {
+    case 'get_current_time':
+      return `*get_current_time: ${z.object(getCurrentTimeFunction.parameters).parse(JSON.parse(item.arguments)).timezone}*`;
+    case 'read_chat_messages':
+      return `*read_chat_messages: ${z.object(readChatMessagesFunction.parameters).parse(JSON.parse(item.arguments)).limit}*`;
+    case 'think_deeply':
+      return `*think_deeply: ${z.object(thinkDeeplyFunction.parameters).parse(JSON.parse(item.arguments)).thought}*`;
+    case 'store_context':
+      return `*store_context: ${z.object(storeContextFunction.parameters).parse(JSON.parse(item.arguments)).context}*`;
+    case 'create_task':
+      return `*create_task: ${z.object(createTaskFunction.parameters).parse(JSON.parse(item.arguments)).name}*`;
+    case 'update_task':
+      return `*update_task: ${z.object(updateTaskFunction.parameters).parse(JSON.parse(item.arguments)).name}*`;
+    case 'delete_task':
+      return `*delete_task: ${z.object(deleteTaskFunction.parameters).parse(JSON.parse(item.arguments)).name}*`;
+    case 'complete_task':
+      return `*complete_task: ${z.object(completeTaskFunction.parameters).parse(JSON.parse(item.arguments)).name}*`;
+    default:
+      return `*${item.name}*`;
+  }
 }
 
 export function formatInputItem(item: ResponseInputItem): string {
