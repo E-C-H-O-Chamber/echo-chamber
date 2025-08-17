@@ -1,13 +1,14 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 
+import { getErrorMessage } from '../../utils/error';
 import { createLogger } from '../../utils/logger';
 
 import { readChatMessagesFunction } from './functions/chat';
 import { thinkDeeplyFunction } from './functions/think';
 import { getCurrentTimeFunction } from './functions/time';
 
-import type { ITool } from './functions';
+import type { ITool, ToolContext } from './functions';
 import type { Logger } from '../../utils/logger';
 import type {
   Response,
@@ -23,18 +24,22 @@ import type {
 const MAX_TURNS = 10;
 
 export class OpenAIClient {
-  private readonly env: Env;
   private readonly client: OpenAI;
   private readonly tools: ITool[];
-  private previousResponseId: string | undefined;
+  private readonly toolContext: ToolContext;
   private readonly logger: Logger;
+  private previousResponseId: string | undefined;
 
-  constructor(env: Env, tools: ITool[] = []) {
-    this.env = env;
+  constructor(
+    env: Env,
+    tools: ITool[] = [],
+    toolContext: ToolContext,
+  ) {
     this.client = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
     });
     this.tools = tools;
+    this.toolContext = toolContext;
     this.logger = createLogger(env);
   }
 
@@ -79,12 +84,14 @@ export class OpenAIClient {
     }
 
     try {
-      const result = await tool.execute(functionCall.arguments, this.env);
-      return JSON.stringify(result);
+      return await tool.execute(
+        functionCall.arguments,
+        this.toolContext
+      );
     } catch (error) {
       return JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: getErrorMessage(error),
       });
     }
   }

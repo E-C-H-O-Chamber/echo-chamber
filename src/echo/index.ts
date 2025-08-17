@@ -254,13 +254,23 @@ export class Echo extends DurableObject<Env> {
     await this.logger.info(`${name}が思考を開始しました。`);
 
     try {
-      const openai = new OpenAIClient(this.env, [
-        getCurrentTimeFunction,
-        checkNotificationsFunction,
-        readChatMessagesFunction,
-        sendChatMessageFunction,
-        thinkDeeplyFunction,
-      ]);
+      const openai = new OpenAIClient(
+        this.env,
+        [
+          getCurrentTimeFunction,
+          checkNotificationsFunction,
+          readChatMessagesFunction,
+          sendChatMessageFunction,
+          thinkDeeplyFunction,
+        ],
+        {
+          echoId: id,
+          store: this.store,  
+          storage: this.storage,
+          discordBotToken: this.env.DISCORD_BOT_TOKEN_RIN,
+          logger: this.logger,
+        }
+      );
       const messages = [
         {
           role: 'system' as const,

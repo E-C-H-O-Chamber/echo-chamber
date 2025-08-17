@@ -1,7 +1,9 @@
 import { env } from 'cloudflare:test';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
   accumulateUsage,
+  formatLogOutput,
   formatInputItem,
   formatOutputItem,
   formatMessage,
@@ -22,7 +24,7 @@ import { thinkDeeplyFunction } from '../../../../src/llm/openai/functions/think'
 import { getCurrentTimeFunction } from '../../../../src/llm/openai/functions/time';
 import { readChatMessagesFunction } from '../../../../src/llm/openai/functions/chat';
 
-const mockCreateResponse = vi.fn().mockResolvedValue({});
+const mockCreateResponse = vi.fn();
 
 vi.mock('openai', () => {
   return {
@@ -35,15 +37,24 @@ vi.mock('openai', () => {
 });
 
 describe('OpenAI Client', () => {
-  afterEach(() => {
-    vi.clearAllMocks();
+  beforeEach(() => {
+    vi.resetAllMocks();
   });
 
   it('createResponse', async () => {
-    const client = new OpenAIClient(env, [thinkDeeplyFunction]);
-    await client.createResponse([]);
+    const client = new OpenAIClient(
+      env,
+      [thinkDeeplyFunction],
+      mockToolContext
+    );
+    const input = [{
+      role: 'user' as const,
+      content: 'Hello, how are you?',
+    }];
+    mockCreateResponse.mockResolvedValue({});
+    await client.createResponse(input);
     expect(mockCreateResponse).toHaveBeenCalledWith({
-      input: [],
+      input,
       model: 'gpt-4.1',
       parallel_tool_calls: true,
       previous_response_id: undefined,
@@ -57,9 +68,13 @@ describe('OpenAI Client', () => {
     });
   });
 
-  describe('executeFunction', async () => {
+  describe('executeFunction', () => {
     it('正常なツール使用', async () => {
-      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const client = new OpenAIClient(
+        env,
+        [thinkDeeplyFunction],
+        mockToolContext
+      );
       const result = await client.executeFunction({
         type: 'function_call',
         name: 'think_deeply',
@@ -74,7 +89,11 @@ describe('OpenAI Client', () => {
     });
 
     it('未登録のツール使用', async () => {
-      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const client = new OpenAIClient(
+        env,
+        [thinkDeeplyFunction],
+        mockToolContext
+      );
       const result = await client.executeFunction({
         type: 'function_call',
         name: 'unknown_function',
@@ -90,16 +109,23 @@ describe('OpenAI Client', () => {
     });
 
     it('引数のパースエラー', async () => {
-      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const client = new OpenAIClient(
+        env,
+        [thinkDeeplyFunction],
+        mockToolContext
+      );
       const result = await client.executeFunction({
         type: 'function_call',
         name: 'think_deeply',
         call_id: 'call_789',
         arguments: 'invalid_json',
       });
-      const resultObj = JSON.parse(result);
-      expect(resultObj.success).toBe(false);
-      expect(resultObj.error).toBeDefined();
+      expect(result).toEqual(
+        JSON.stringify({
+          success: false,
+          error: 'arguments is not valid JSON',
+        })
+      );
     });
 
     it('ツールの実行中にエラーが発生', async () => {
@@ -117,23 +143,33 @@ describe('OpenAI Client', () => {
           throw new Error('Function execution error');
         },
       } as const;
-      const client = new OpenAIClient(env, [errorFunction]);
-
+      const client = new OpenAIClient(
+        env,
+        [errorFunction],
+        mockToolContext
+      );
       const result = await client.executeFunction({
         type: 'function_call',
         name: 'error_function',
         call_id: 'call_999',
         arguments: JSON.stringify({}),
       });
-      const resultObj = JSON.parse(result);
-      expect(resultObj.success).toBe(false);
-      expect(resultObj.error).toBe('Function execution error');
+      expect(result).toEqual(
+        JSON.stringify({
+          success: false,
+          error: 'Function execution error',
+        })
+      );
     });
   });
 
-  describe('call', async () => {
+  describe('call', () => {
     it('シンプルな応答', async () => {
-      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const client = new OpenAIClient(
+        env,
+        [thinkDeeplyFunction],
+        mockToolContext
+      );
       const input: ResponseInputItem[] = [
         {
           role: 'user',
@@ -167,12 +203,16 @@ describe('OpenAI Client', () => {
         top_p: 0.95,
         truncation: 'auto',
       });
-      expect(response).toEqual(usage);
       expect(mockCreateResponse).toHaveBeenCalledTimes(1);
+      expect(response).toEqual(usage);
     });
 
     it('ツールコールを含む応答', async () => {
-      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const client = new OpenAIClient(
+        env,
+        [thinkDeeplyFunction],
+        mockToolContext
+      );
       const input: ResponseInputItem[] = [
         {
           role: 'user',
@@ -187,26 +227,22 @@ describe('OpenAI Client', () => {
         total_tokens: 20,
       };
       const usage2 = {
-        input_tokens: 5,
-        input_tokens_details: { cached_tokens: 0 },
+        input_tokens: 10,
+        input_tokens_details: { cached_tokens: 5 },
         output_tokens: 15,
-        output_tokens_details: { reasoning_tokens: 0 },
-        total_tokens: 20,
+        output_tokens_details: { reasoning_tokens: 10 },
+        total_tokens: 25,
       };
-      const usage = {
-        input_tokens: usage1.input_tokens + usage2.input_tokens,
+      const totalUsage = {
+        input_tokens: 20,
         input_tokens_details: {
-          cached_tokens:
-            usage1.input_tokens_details.cached_tokens +
-            usage2.input_tokens_details.cached_tokens,
+          cached_tokens: 5,
         },
-        output_tokens: usage1.output_tokens + usage2.output_tokens,
+        output_tokens: 25,
         output_tokens_details: {
-          reasoning_tokens:
-            usage1.output_tokens_details.reasoning_tokens +
-            usage2.output_tokens_details.reasoning_tokens,
+          reasoning_tokens: 10,
         },
-        total_tokens: usage1.total_tokens + usage2.total_tokens,
+        total_tokens: 45,
       };
       mockCreateResponse.mockResolvedValueOnce({
         id: 'response_123',
@@ -272,12 +308,16 @@ describe('OpenAI Client', () => {
         top_p: 0.95,
         truncation: 'auto',
       });
-      expect(response).toEqual(usage);
+      expect(response).toEqual(totalUsage);
       expect(mockCreateResponse).toHaveBeenCalledTimes(2);
     });
 
     it('MAX_TURNSを超える呼び出し', async () => {
-      const client = new OpenAIClient(env, [thinkDeeplyFunction]);
+      const client = new OpenAIClient(
+        env,
+        [thinkDeeplyFunction],
+        mockToolContext
+      );
       const input: ResponseInputItem[] = [
         {
           role: 'user',
