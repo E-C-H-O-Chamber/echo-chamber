@@ -73,5 +73,16 @@ describe('getCurrentTimeFunction', () => {
       };
       expect(result).toEqual(expected);
     });
+
+    it('invalid timezone', () => {
+      const result = getCurrentTimeFunction.handler(
+        { timezone: 'Invalid/Timezone' },
+        mockToolContext
+      );
+      expect(result).toEqual({
+        success: false,
+        error: 'Failed to format date: Invalid time zone specified: Invalid/Timezone',
+      });
+    });
   });
 });
