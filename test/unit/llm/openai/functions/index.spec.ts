@@ -1,10 +1,10 @@
-import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import {
   Tool,
   type ToolResult,
 } from '../../../../../src/llm/openai/functions/index';
+import { mockToolContext } from '../../../../mocks/tool';
 
 describe('Tool', () => {
   const mockName = 'test_tool';
@@ -56,7 +56,7 @@ describe('Tool', () => {
     });
 
     describe('成功ケース', () => {
-      it('正常なJSON文字列でhandlerが実行される', () => {
+      it('正常なJSON文字列でhandlerが実行される', async () => {
         const successResult: ToolResult = { success: true };
         mockHandler.mockReturnValue(successResult);
 
@@ -67,36 +67,36 @@ describe('Tool', () => {
           mockHandler
         );
         const args = JSON.stringify({ message: 'test', count: 1 });
-        const result = tool.execute(args, env);
+        const result = await tool.execute(args, mockToolContext);
 
         expect(mockHandler).toHaveBeenCalledWith(
           { message: 'test', count: 1 },
-          env
+          mockToolContext
         );
-        expect(result).toBe(successResult);
+        expect(result).toBe(JSON.stringify(successResult));
       });
 
       it('async handlerが正しく動作する', async () => {
         const successResult: ToolResult = { success: true };
-        const asyncHandler = vi.fn().mockResolvedValue(successResult);
+        mockHandler.mockResolvedValue(successResult);
 
         const tool = new Tool(
           mockName,
           mockDescription,
           mockParameters,
-          asyncHandler
+          mockHandler
         );
         const args = JSON.stringify({ message: 'test', count: 1 });
-        const result = await tool.execute(args, env);
+        const result = await tool.execute(args, mockToolContext);
 
-        expect(asyncHandler).toHaveBeenCalledWith(
+        expect(mockHandler).toHaveBeenCalledWith(
           { message: 'test', count: 1 },
-          env
+          mockToolContext
         );
-        expect(result).toBe(successResult);
+        expect(result).toBe(JSON.stringify(successResult));
       });
 
-      it('handlerのエラー結果が正しく返される', () => {
+      it('handlerのエラー結果が正しく返される', async () => {
         const errorResult: ToolResult = {
           success: false,
           error: 'Handler error',
@@ -110,60 +110,90 @@ describe('Tool', () => {
           mockHandler
         );
         const args = JSON.stringify({ message: 'test', count: 1 });
-        const result = tool.execute(args, env);
+        const result = await tool.execute(args, mockToolContext);
 
         expect(mockHandler).toHaveBeenCalledWith(
           { message: 'test', count: 1 },
-          env
+          mockToolContext
         );
-        expect(result).toBe(errorResult);
+        expect(result).toBe(JSON.stringify(errorResult));
       });
     });
 
     describe('失敗ケース', () => {
-      it('不正なJSON文字列でエラーが発生する', () => {
+      it('不正なJSON文字列でエラーレスポンスが返される', async () => {
         const tool = new Tool(
           mockName,
           mockDescription,
           mockParameters,
           mockHandler
         );
-        const invalidArgs = '{"message": "test", "count":}';
+        const args = '{"message": "test", "count":}';
+        const result = await tool.execute(args, mockToolContext);
 
-        expect(() => tool.execute(invalidArgs, env)).toThrow();
+        expect(result).toBe(
+          JSON.stringify({
+            success: false,
+            error: 'arguments is not valid JSON',
+          })
+        );
         expect(mockHandler).not.toHaveBeenCalled();
       });
 
-      it('パラメータバリデーション失敗でエラーが発生する', () => {
+      it('パラメータバリデーション失敗でエラーレスポンスが返される', async () => {
         const tool = new Tool(
           mockName,
           mockDescription,
           mockParameters,
           mockHandler
         );
-        const invalidArgs = JSON.stringify({
+        const args = JSON.stringify({
           message: 'test',
           count: 'invalid',
         });
+        const result = await tool.execute(args, mockToolContext);
+        const expected = {
+          success: false,
+          error: [
+            {
+              expected: 'number',
+              code: 'invalid_type',
+              path: ['count'],
+              message: 'Invalid input: expected number, received string',
+            },
+          ],
+        };
 
-        expect(() => tool.execute(invalidArgs, env)).toThrow();
+        expect(result).toBe(JSON.stringify(expected));
         expect(mockHandler).not.toHaveBeenCalled();
       });
 
-      it('必須パラメータが不足している場合エラーが発生する', () => {
+      it('必須パラメータが不足している場合エラーレスポンスが返される', async () => {
         const tool = new Tool(
           mockName,
           mockDescription,
           mockParameters,
           mockHandler
         );
-        const incompleteArgs = JSON.stringify({ message: 'test' });
+        const args = JSON.stringify({ message: 'test' });
+        const result = await tool.execute(args, mockToolContext);
+        const expected = {
+          success: false,
+          error: [
+            {
+              expected: 'number',
+              code: 'invalid_type',
+              path: ['count'],
+              message: 'Invalid input: expected number, received undefined',
+            },
+          ],
+        };
 
-        expect(() => tool.execute(incompleteArgs, env)).toThrow();
+        expect(result).toBe(JSON.stringify(expected));
         expect(mockHandler).not.toHaveBeenCalled();
       });
 
-      it('handler内で例外が発生した場合、例外が再スローされる', () => {
+      it('handler内で例外が発生した場合エラーレスポンスが返される', async () => {
         const error = new Error('Handler exception');
         mockHandler.mockImplementation(() => {
           throw error;
@@ -176,11 +206,17 @@ describe('Tool', () => {
           mockHandler
         );
         const args = JSON.stringify({ message: 'test', count: 1 });
+        const result = await tool.execute(args, mockToolContext);
 
-        expect(() => tool.execute(args, env)).toThrow(error);
+        expect(result).toBe(
+          JSON.stringify({
+            success: false,
+            error: error.message,
+          })
+        );
       });
 
-      it('async handler内で例外が発生した場合、Promise rejectされる', async () => {
+      it('async handler内で例外が発生した場合エラーレスポンスが返される', async () => {
         const error = new Error('Async handler exception');
         const asyncHandler = vi.fn().mockRejectedValue(error);
 
@@ -191,13 +227,19 @@ describe('Tool', () => {
           asyncHandler
         );
         const args = JSON.stringify({ message: 'test', count: 1 });
+        const result = await tool.execute(args, mockToolContext);
 
-        await expect(tool.execute(args, env)).rejects.toThrow(error);
+        expect(result).toBe(
+          JSON.stringify({
+            success: false,
+            error: error.message,
+          })
+        );
       });
     });
 
     describe('エッジケース', () => {
-      it('空のオブジェクトパラメータで正しく動作する', () => {
+      it('空のオブジェクトパラメータで正しく動作する', async () => {
         const emptyParameters = {};
         const successResult: ToolResult = { success: true };
         const handler = vi.fn().mockReturnValue(successResult);
@@ -209,13 +251,13 @@ describe('Tool', () => {
           handler
         );
         const args = JSON.stringify({});
-        const result = tool.execute(args, env);
+        const result = await tool.execute(args, mockToolContext);
 
-        expect(handler).toHaveBeenCalledWith({}, env);
-        expect(result).toBe(successResult);
+        expect(handler).toHaveBeenCalledWith({}, mockToolContext);
+        expect(result).toBe(JSON.stringify(successResult));
       });
 
-      it('オプショナルパラメータが省略された場合でも動作する', () => {
+      it('オプショナルパラメータが省略された場合でも動作する', async () => {
         const parametersWithOptional = {
           message: z.string().describe('Required message'),
           count: z.number().optional().describe('Optional count'),
@@ -230,13 +272,16 @@ describe('Tool', () => {
           handler
         );
         const args = JSON.stringify({ message: 'test' });
-        const result = tool.execute(args, env);
+        const result = await tool.execute(args, mockToolContext);
 
-        expect(handler).toHaveBeenCalledWith({ message: 'test' }, env);
-        expect(result).toBe(successResult);
+        expect(handler).toHaveBeenCalledWith(
+          { message: 'test' },
+          mockToolContext
+        );
+        expect(result).toBe(JSON.stringify(successResult));
       });
 
-      it('デフォルト値が設定されたパラメータで動作する', () => {
+      it('デフォルト値が設定されたパラメータで動作する', async () => {
         const parametersWithDefault = {
           message: z.string().describe('Required message'),
           count: z
@@ -255,13 +300,13 @@ describe('Tool', () => {
           handler
         );
         const args = JSON.stringify({ message: 'test' });
-        const result = tool.execute(args, env);
+        const result = await tool.execute(args, mockToolContext);
 
         expect(handler).toHaveBeenCalledWith(
           { message: 'test', count: 1 },
-          env
+          mockToolContext
         );
-        expect(result).toBe(successResult);
+        expect(result).toBe(JSON.stringify(successResult));
       });
     });
   });

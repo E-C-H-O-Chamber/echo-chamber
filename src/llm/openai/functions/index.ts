@@ -1,6 +1,17 @@
 import { z } from 'zod';
 
+import { getErrorMessage } from '../../../utils/error';
+
+import type { Logger } from '../../../utils/logger';
 import type { FunctionTool } from 'openai/resources/responses/responses';
+
+export interface ToolContext {
+  echoId: string;
+  store: KVNamespace;
+  storage: DurableObjectStorage;
+  discordBotToken: string;
+  logger: Logger;
+}
 
 interface ToolResultSuccess {
   success: true;
@@ -18,7 +29,7 @@ export interface ITool {
   name: string;
   description: string;
   definition: FunctionTool;
-  execute(args: string, env: Env): ToolResult | Promise<ToolResult>;
+  execute(args: string, ctx: ToolContext): Promise<string>;
 }
 
 export class Tool<Args extends z.ZodRawShape> implements ITool {
@@ -28,22 +39,45 @@ export class Tool<Args extends z.ZodRawShape> implements ITool {
     readonly parameters: Args,
     readonly handler: (
       args: z.infer<z.ZodObject<Args>>,
-      env: Env
+      ctx: ToolContext
     ) => ToolResult | Promise<ToolResult>
   ) {}
 
   get definition(): FunctionTool {
+    const strict = Object.values(this.parameters).every((param) => {
+      return !z.safeParse(param, undefined).success;
+    });
+
     return {
       type: 'function',
       name: this.name,
       description: this.description,
       parameters: z.toJSONSchema(z.object(this.parameters)),
-      strict: true,
+      strict,
     };
   }
 
-  execute(args: string, env: Env): ToolResult | Promise<ToolResult> {
-    const parsedArgs = z.parse(z.object(this.parameters), JSON.parse(args));
-    return this.handler(parsedArgs, env);
+  async execute(args: string, ctx: ToolContext): Promise<string> {
+    try {
+      const parsedArgs = z.parse(z.object(this.parameters), JSON.parse(args));
+      const result = await this.handler(parsedArgs, ctx);
+      return JSON.stringify(result);
+    } catch (error) {
+      // JSON.parse のエラー
+      if (error instanceof SyntaxError) {
+        return JSON.stringify({
+          success: false,
+          error: `arguments is not valid JSON`,
+        });
+      }
+
+      // Zod のパースエラー
+      if (error instanceof z.ZodError) {
+        return JSON.stringify({ success: false, error: error.issues });
+      }
+
+      // handler のエラー
+      return JSON.stringify({ success: false, error: getErrorMessage(error) });
+    }
   }
 }
