@@ -29,7 +29,7 @@ describe('getCurrentTimeFunction', () => {
       expect(parameters).toHaveProperty('timezone');
       expect(parameters.timezone.unwrap().unwrap().def.type).toBe('string');
       expect(parameters.timezone.unwrap().def.type).toBe('optional');
-      expect(parameters.timezone.def.defaultValue).toBe('UTC');
+      expect(parameters.timezone.def.defaultValue).toBe('Asia/Tokyo');
       expect(parameters.timezone.description).toBeDefined();
     });
   });
@@ -57,6 +57,19 @@ describe('getCurrentTimeFunction', () => {
         success: true,
         current_time: '2025/01/23 13:56:07',
         timezone: 'Asia/Tokyo',
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('America/New_York timezone', () => {
+      const result = getCurrentTimeFunction.handler(
+        { timezone: 'America/New_York' },
+        mockToolContext
+      );
+      const expected = {
+        success: true,
+        current_time: '2025/01/22 23:56:07',
+        timezone: 'America/New_York',
       };
       expect(result).toEqual(expected);
     });

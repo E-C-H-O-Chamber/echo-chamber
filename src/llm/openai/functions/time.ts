@@ -12,7 +12,7 @@ export const getCurrentTimeFunction = new Tool(
     timezone: z
       .string()
       .optional()
-      .default('UTC')
+      .default('Asia/Tokyo')
       .describe('Timezone identifier (e.g., "Asia/Tokyo", "UTC")'),
   },
   ({ timezone }) => {
