@@ -1,16 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  addReactionToChatMessageFunction,
-  checkNotificationsFunction,
-  readChatMessagesFunction,
-  sendChatMessageFunction,
-} from '../../../../../src/llm/openai/functions/chat';
+
 import {
   addReactionToMessage,
   getChannelMessages,
   getUnreadMessageCount,
   sendChannelMessage,
 } from '../../../../../src/discord';
+import {
+  addReactionToChatMessageFunction,
+  checkNotificationsFunction,
+  readChatMessagesFunction,
+  sendChatMessageFunction,
+} from '../../../../../src/llm/openai/functions/chat';
 import { createDiscordMessagesResponse } from '../../../../helpers/discord';
 import { mockToolContext } from '../../../../mocks/tool';
 
@@ -19,6 +20,7 @@ const CHAT_API_ERROR = 'Chat API error';
 
 vi.mock('../../../../../src/discord', async (importOriginal) => {
   const actual =
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
     await importOriginal<typeof import('../../../../../src/discord')>();
   return {
     ...actual,

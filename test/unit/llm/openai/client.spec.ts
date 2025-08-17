@@ -11,6 +11,8 @@ import {
   formatFunctionCall,
   OpenAIClient,
 } from '../../../../src/llm/openai/client';
+import { thinkDeeplyFunction } from '../../../../src/llm/openai/functions/think';
+import { mockToolContext } from '../../../mocks/tool';
 
 import type {
   ResponseUsage,
@@ -20,9 +22,6 @@ import type {
   ResponseOutputMessage,
   ResponseFunctionToolCall,
 } from 'openai/resources/responses/responses';
-import { thinkDeeplyFunction } from '../../../../src/llm/openai/functions/think';
-import { getCurrentTimeFunction } from '../../../../src/llm/openai/functions/time';
-import { readChatMessagesFunction } from '../../../../src/llm/openai/functions/chat';
 
 const mockCreateResponse = vi.fn();
 

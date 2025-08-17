@@ -25,7 +25,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/**/*.ts'],
+    files: ['src/**/*.ts', 'test/**/*.ts'],
     languageOptions: {
       globals: { ...globals.node },
       parser: tsparser,
@@ -159,6 +159,12 @@ export default tseslint.config(
       'import/first': 'error',
       'import/newline-after-import': 'error',
       'import/no-unresolved': 'off',
+    },
+  },
+  {
+    files: ['test/**/*.ts'],
+    rules: {
+      'max-lines-per-function': 'off',
     },
   }
 );

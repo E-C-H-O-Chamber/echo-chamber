@@ -1,4 +1,4 @@
-import {
+import type {
   RESTGetAPIChannelMessagesResult,
   RESTGetAPICurrentUserResult,
   APIMessage,
@@ -6,7 +6,7 @@ import {
   APIReaction,
 } from 'discord-api-types/v10';
 
-type MessageInput = {
+interface MessageInput {
   message: string;
   user: string;
   userId?: string;
@@ -15,14 +15,14 @@ type MessageInput = {
     emoji: string;
     me: boolean;
   }[];
-};
+}
 
 export function createDiscordMessagesResponse(
   messages: MessageInput[]
 ): RESTGetAPIChannelMessagesResult {
   return messages.map((msg, index) => {
     const author: APIUser = {
-      id: msg.userId || `user-${index + 1}`,
+      id: msg.userId ?? `user-${index + 1}`,
       username: msg.user,
       discriminator: '0000',
       global_name: msg.user,
@@ -65,7 +65,7 @@ export function createDiscordMessagesResponse(
       mention_channels: [],
       attachments: [],
       embeds: [],
-      reactions: reactions,
+      reactions,
       pinned: false,
     };
 
