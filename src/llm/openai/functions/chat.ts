@@ -6,6 +6,7 @@ import {
   getUnreadMessageCount,
   sendChannelMessage,
 } from '../../../discord';
+import { formatDatetime } from '../../../utils/datetime';
 import { getErrorMessage } from '../../../utils/error';
 
 import { Tool } from '.';
@@ -83,7 +84,7 @@ export const readChatMessagesFunction = new Tool(
           messageId: message.id,
           user: message.author.username,
           message: message.content,
-          timestamp: message.timestamp,
+          created_at: formatDatetime(new Date(message.timestamp), 'Asia/Tokyo'),
           reactions: message.reactions?.map((reaction) => ({
             emoji: reaction.emoji.name,
             me: reaction.me,

@@ -214,7 +214,7 @@ describe('readChatMessagesFunction', () => {
             messageId: 'message-1',
             user: 'user1',
             message: 'Hello',
-            timestamp: '2025-01-23T04:56:07.089Z',
+            created_at: '2025/01/23 13:56:07',
           },
         ],
       };
@@ -252,19 +252,19 @@ describe('readChatMessagesFunction', () => {
             messageId: 'message-3',
             user: 'user3',
             message: 'First',
-            timestamp: '2025-01-23T04:56:07.000Z',
+            created_at: '2025/01/23 13:56:07',
           },
           {
             messageId: 'message-2',
             user: 'user2',
             message: 'Second',
-            timestamp: '2025-01-23T04:56:08.000Z',
+            created_at: '2025/01/23 13:56:08',
           },
           {
             messageId: 'message-1',
             user: 'user1',
             message: 'Third',
-            timestamp: '2025-01-23T04:56:09.000Z',
+            created_at: '2025/01/23 13:56:09',
           },
         ],
       };
@@ -294,7 +294,7 @@ describe('readChatMessagesFunction', () => {
             messageId: 'message-1',
             user: 'user1',
             message: 'Hello with reactions',
-            timestamp: '2025-01-23T04:56:07.089Z',
+            created_at: '2025/01/23 13:56:07',
             reactions: [
               { emoji: '👍', me: false },
               { emoji: '😄', me: true },
