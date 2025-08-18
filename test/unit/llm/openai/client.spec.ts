@@ -890,6 +890,24 @@ describe('formatMessage', () => {
       );
     });
 
+    it('未知のタイプを正しく処理する', () => {
+      const message: ResponseOutputMessage = {
+        type: 'message',
+        role: 'assistant',
+        id: 'msg_456',
+        status: 'completed',
+        content: [
+          {
+            type: 'unknown',
+          },
+        ] as unknown as ResponseOutputMessage['content'],
+      };
+
+      expect(() => formatMessage(message)).toThrowError(
+        'Unexpected contentType: unknown'
+      );
+    });
+
     it('複数のcontentアイテムを正しく結合する', () => {
       const message: ResponseInputItem.Message = {
         type: 'message',
