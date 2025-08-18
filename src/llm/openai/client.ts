@@ -52,15 +52,22 @@ export class OpenAIClient {
   async createResponse(input: ResponseInput): Promise<Response> {
     const response = await this.client.responses.create({
       input,
-      model: 'gpt-4.1',
+      model: 'gpt-5-2025-08-07',
       parallel_tool_calls: true,
       previous_response_id: this.previousResponseId,
+      reasoning: {
+        effort: 'minimal',
+      },
       store: true,
       stream: false,
-      temperature: 0.3,
+      text: {
+        format: {
+          type: 'text',
+        },
+        verbosity: 'low',
+      },
       tool_choice: 'auto',
       tools: this.tools.map((tool) => tool.definition),
-      top_p: 0.95,
       truncation: 'auto',
     });
 

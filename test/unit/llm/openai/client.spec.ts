@@ -56,15 +56,22 @@ describe('OpenAI Client', () => {
     await client.createResponse(input);
     expect(mockCreateResponse).toHaveBeenCalledWith({
       input,
-      model: 'gpt-4.1',
+      model: 'gpt-5-2025-08-07',
       parallel_tool_calls: true,
       previous_response_id: undefined,
+      reasoning: {
+        effort: 'minimal',
+      },
       store: true,
       stream: false,
-      temperature: 0.3,
+      text: {
+        format: {
+          type: 'text',
+        },
+        verbosity: 'low',
+      },
       tool_choice: 'auto',
       tools: [thinkDeeplyFunction.definition],
-      top_p: 0.95,
       truncation: 'auto',
     });
   });
@@ -189,15 +196,22 @@ describe('OpenAI Client', () => {
       const response = await client.call(input);
       expect(mockCreateResponse).toHaveBeenCalledWith({
         input,
-        model: 'gpt-4.1',
+        model: 'gpt-5-2025-08-07',
         parallel_tool_calls: true,
         previous_response_id: undefined,
+        reasoning: {
+          effort: 'minimal',
+        },
         store: true,
         stream: false,
-        temperature: 0.3,
+        text: {
+          format: {
+            type: 'text',
+          },
+          verbosity: 'low',
+        },
         tool_choice: 'auto',
         tools: [thinkDeeplyFunction.definition],
-        top_p: 0.95,
         truncation: 'auto',
       });
       expect(mockCreateResponse).toHaveBeenCalledTimes(1);
@@ -281,28 +295,42 @@ describe('OpenAI Client', () => {
       const response = await client.call(input);
       expect(mockCreateResponse).toHaveBeenNthCalledWith(1, {
         input,
-        model: 'gpt-4.1',
+        model: 'gpt-5-2025-08-07',
         parallel_tool_calls: true,
         previous_response_id: undefined,
+        reasoning: {
+          effort: 'minimal',
+        },
         store: true,
         stream: false,
-        temperature: 0.3,
+        text: {
+          format: {
+            type: 'text',
+          },
+          verbosity: 'low',
+        },
         tool_choice: 'auto',
         tools: [thinkDeeplyFunction.definition],
-        top_p: 0.95,
         truncation: 'auto',
       });
       expect(mockCreateResponse).toHaveBeenNthCalledWith(2, {
         input: nextInput,
-        model: 'gpt-4.1',
+        model: 'gpt-5-2025-08-07',
         parallel_tool_calls: true,
         previous_response_id: 'response_123',
+        reasoning: {
+          effort: 'minimal',
+        },
         store: true,
         stream: false,
-        temperature: 0.3,
+        text: {
+          format: {
+            type: 'text',
+          },
+          verbosity: 'low',
+        },
         tool_choice: 'auto',
         tools: [thinkDeeplyFunction.definition],
-        top_p: 0.95,
         truncation: 'auto',
       });
       expect(response).toEqual(totalUsage);

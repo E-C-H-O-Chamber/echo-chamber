@@ -8,8 +8,9 @@
     "dev": "wrangler types && wrangler dev",
     "start": "wrangler dev",
     "cf-typegen": "wrangler types",
-    "lint": "eslint ./src --fix",
-    "lint:check": "eslint ./src --max-warnings 0",
+    "check": "pnpm lint && pnpm format && pnpm typecheck",
+    "lint": "eslint ./src ./test --fix",
+    "lint:check": "eslint ./src ./test --max-warnings 0",
     "lint:inspect": "eslint --inspect-config",
     "format": "prettier --check --write \"**/*.{js,ts,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
@@ -45,11 +46,12 @@
     "@discordjs/rest": "^2.5.1",
     "discord-api-types": "^0.38.16",
     "hono": "^4.7.11",
-    "openai": "^5.10.1",
+    "openai": "^5.12.2",
     "zod": "^4.0.5"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "esbuild",
       "eslint",
       "sharp",
       "workerd"
