@@ -96,7 +96,14 @@ export class OpenAIClient {
    */
   async call(input: ResponseInput, turn = 1): Promise<ResponseUsage> {
     if (turn > MAX_TURNS) {
-      throw new Error('Maximum turns exceeded');
+      await this.logger.warn('Maximum turns exceeded');
+      return {
+        input_tokens: 0,
+        input_tokens_details: { cached_tokens: 0 },
+        output_tokens: 0,
+        output_tokens_details: { reasoning_tokens: 0 },
+        total_tokens: 0,
+      };
     }
 
     await this.logger.debug(input.map(formatInputItem).join('\n\n'));

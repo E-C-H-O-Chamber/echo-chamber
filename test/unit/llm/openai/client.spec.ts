@@ -363,18 +363,23 @@ describe('OpenAI Client', () => {
           },
         ],
         usage: {
-          input_tokens: 0,
-          input_tokens_details: { cached_tokens: 0 },
-          output_tokens: 0,
-          output_tokens_details: { reasoning_tokens: 0 },
-          total_tokens: 0,
+          input_tokens: 4,
+          input_tokens_details: { cached_tokens: 3 },
+          output_tokens: 2,
+          output_tokens_details: { reasoning_tokens: 1 },
+          total_tokens: 10,
         },
       });
 
-      await expect(client.call(input)).rejects.toThrow(
-        'Maximum turns exceeded'
-      );
+      const response = await client.call(input);
       expect(mockCreateResponse).toHaveBeenCalledTimes(10);
+      expect(response).toEqual({
+        input_tokens: 40,
+        input_tokens_details: { cached_tokens: 30 },
+        output_tokens: 20,
+        output_tokens_details: { reasoning_tokens: 10 },
+        total_tokens: 100,
+      });
     });
   });
 });
