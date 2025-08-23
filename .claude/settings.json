@@ -13,7 +13,7 @@
       "mcp__cloudflare-docs",
       "mcp__cloudflare-observability",
       "mcp__cloudflare-browser",
-      "mcp__serena"
+      "mcp__typescript"
     ],
     "deny": []
   },

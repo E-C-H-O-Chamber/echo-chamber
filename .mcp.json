@@ -20,19 +20,10 @@
       "args": ["mcp-remote", "https://browser.mcp.cloudflare.com/sse"],
       "env": {}
     },
-    "serena": {
+    "typescript": {
       "type": "stdio",
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/oraios/serena",
-        "serena",
-        "start-mcp-server",
-        "--context",
-        "ide-assistant",
-        "--project",
-        "/Users/yukawashinnosuke/projects/echo-chamber"
-      ],
+      "command": "npx",
+      "args": ["-y", "@mizchi/lsmcp", "-p", "tsgo"],
       "env": {}
     }
   }
