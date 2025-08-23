@@ -655,6 +655,20 @@ describe('formatLogOutput', () => {
     expect(formatLogOutput(output)).toBe('*default_function*');
   });
 
+  it('function の引数が不正な型でもエラーにならない', () => {
+    const output: ResponseOutputItem[] = [
+      {
+        type: 'function_call',
+        call_id: 'call_invalid_arg_type',
+        name: 'read_chat_messages',
+        arguments: JSON.stringify({ param: 123 }),
+        status: 'completed',
+      },
+    ];
+
+    expect(formatLogOutput(output)).toBe('*read_chat_messages: undefined*');
+  });
+
   it('複数のoutputアイテム', () => {
     const output: ResponseOutputItem[] = [
       {

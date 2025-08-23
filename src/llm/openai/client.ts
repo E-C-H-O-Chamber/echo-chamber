@@ -1,19 +1,7 @@
 import OpenAI from 'openai';
-import { z } from 'zod';
 
 import { getErrorMessage } from '../../utils/error';
 import { createLogger } from '../../utils/logger';
-
-import { readChatMessagesFunction } from './functions/chat';
-import { storeContextFunction } from './functions/context';
-import {
-  completeTaskFunction,
-  createTaskFunction,
-  deleteTaskFunction,
-  updateTaskFunction,
-} from './functions/task';
-import { thinkDeeplyFunction } from './functions/think';
-import { getCurrentTimeFunction } from './functions/time';
 
 import type { ITool, ToolContext } from './functions';
 import type { Logger } from '../../utils/logger';
@@ -206,23 +194,25 @@ export function formatLogOutput(output: ResponseOutputItem[]): string {
 }
 
 function formatFunctionCallLogOutput(item: ResponseFunctionToolCall): string {
+  const args = JSON.parse(item.arguments) as Record<string, unknown>;
+
   switch (item.name) {
     case 'get_current_time':
-      return `*get_current_time: ${z.object(getCurrentTimeFunction.parameters).parse(JSON.parse(item.arguments)).timezone}*`;
+      return `*get_current_time: ${args.timezone as string}*`;
     case 'read_chat_messages':
-      return `*read_chat_messages: ${z.object(readChatMessagesFunction.parameters).parse(JSON.parse(item.arguments)).limit}*`;
+      return `*read_chat_messages: ${args.limit as number}*`;
     case 'think_deeply':
-      return `*think_deeply: ${z.object(thinkDeeplyFunction.parameters).parse(JSON.parse(item.arguments)).thought}*`;
+      return `*think_deeply: ${args.thought as string}*`;
     case 'store_context':
-      return `*store_context: ${z.object(storeContextFunction.parameters).parse(JSON.parse(item.arguments)).context}*`;
+      return `*store_context: ${args.context as string}*`;
     case 'create_task':
-      return `*create_task: ${z.object(createTaskFunction.parameters).parse(JSON.parse(item.arguments)).name}*`;
+      return `*create_task: ${args.name as string}*`;
     case 'update_task':
-      return `*update_task: ${z.object(updateTaskFunction.parameters).parse(JSON.parse(item.arguments)).name}*`;
+      return `*update_task: ${args.name as string}*`;
     case 'delete_task':
-      return `*delete_task: ${z.object(deleteTaskFunction.parameters).parse(JSON.parse(item.arguments)).name}*`;
+      return `*delete_task: ${args.name as string}*`;
     case 'complete_task':
-      return `*complete_task: ${z.object(completeTaskFunction.parameters).parse(JSON.parse(item.arguments)).name}*`;
+      return `*complete_task: ${args.name as string}*`;
     default:
       return `*${item.name}*`;
   }
