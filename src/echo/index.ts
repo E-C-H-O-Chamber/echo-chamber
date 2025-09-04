@@ -55,22 +55,32 @@ export class Echo extends DurableObject<Env> {
         const id = await this.getId();
         const name = await this.getName();
         const state = await this.getState();
+        const context = await this.storage.get<string>('context');
+        const tasks = await this.storage.get('tasks');
         const nextAlarm = await this.storage.getAlarm();
         const usage = await this.getAllUsage();
-        return c.json({
-          id,
-          name,
-          state,
-          nextAlarm:
-            nextAlarm != null ? new Date(nextAlarm).toISOString() : null,
-          usage: Object.fromEntries(
-            Object.entries(usage).map(([date, usage]) => [
-              date,
-              usage.total_tokens,
-            ])
-          ),
-          logLevel: this.logger.level,
-        });
+        return c.json(
+          {
+            id,
+            name,
+            state,
+            context,
+            tasks,
+            nextAlarm:
+              nextAlarm != null ? new Date(nextAlarm).toISOString() : null,
+            usage: Object.fromEntries(
+              Object.entries(usage).map(([date, usage]) => [
+                date,
+                usage.total_tokens,
+              ])
+            ),
+            logLevel: this.logger.level,
+          },
+          200,
+          {
+            'Content-Type': 'application/json; charset=utf-8',
+          }
+        );
       })
       .post('/wake', async (c) => {
         await this.wake(c.req.param('id'), true);
