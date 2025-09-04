@@ -2,17 +2,18 @@ import { DurableObject } from 'cloudflare:workers';
 import { Hono } from 'hono';
 
 import { getUnreadMessageCount } from '../discord';
+import { formatDate } from '../utils/datetime';
 import { getErrorMessage } from '../utils/error';
 import { createLogger } from '../utils/logger';
 
 import { ALARM_CONFIG, TOKEN_LIMITS } from './constants';
 import { ThinkingEngine } from './thinking-engine';
+import { addUsage, calculateDynamicTokenLimit, convertUsage } from './usage';
 
+import type { Usage, UsageRecord } from './usage';
 import type { Logger } from '../utils/logger';
-import type { ResponseUsage } from 'openai/resources/responses/responses';
 
 type EchoState = 'Idling' | 'Running' | 'Sleeping';
-type UsageRecord = Record<string, ResponseUsage>;
 
 interface Task {
   name: string;
@@ -138,9 +139,9 @@ export class Echo extends DurableObject<Env> {
   /**
    * 今日のUsage情報を取得
    */
-  async getTodayUsage(): Promise<ResponseUsage | null> {
+  async getTodayUsage(): Promise<Usage | null> {
     const usageRecord = (await this.storage.get<UsageRecord>('usage')) ?? {};
-    return usageRecord[getTodayDateString()] ?? null;
+    return usageRecord[formatDate(new Date())] ?? null;
   }
 
   /**
@@ -208,7 +209,7 @@ export class Echo extends DurableObject<Env> {
     try {
       const usage = await this.thinkingEngine.think();
       await this.logger.info(`usage: ${usage.total_tokens}`);
-      await this.accumulateUsage(usage);
+      await this.updateUsage(convertUsage(usage));
       await this.logger.info(`${name}が思考を正常に完了しました。`);
     } catch (error) {
       await this.logger.error(
@@ -246,7 +247,7 @@ export class Echo extends DurableObject<Env> {
     }
 
     // tokenが余っていれば実行
-    const softLimit = calculateDynamicTokenSoftLimit();
+    const softLimit = calculateDynamicTokenLimit(TOKEN_LIMITS.DAILY_SOFT_LIMIT);
     const todayUsage = await this.getTodayUsage();
     const totalTokens = todayUsage?.total_tokens ?? 0;
     if (totalTokens < softLimit) {
@@ -298,7 +299,10 @@ export class Echo extends DurableObject<Env> {
   private async validateUsageLimit(): Promise<string> {
     const name = await this.getName();
     const todayUsage = await this.getTodayUsage();
-    const dynamicLimit = calculateDynamicTokenLimit();
+    const dynamicLimit = calculateDynamicTokenLimit(
+      TOKEN_LIMITS.DAILY_LIMIT,
+      TOKEN_LIMITS.BUFFER_FACTOR
+    );
 
     if (todayUsage && todayUsage.total_tokens >= dynamicLimit) {
       const now = new Date();
@@ -310,7 +314,7 @@ export class Echo extends DurableObject<Env> {
       return (
         `${name}の現在時刻(${timeStr})におけるトークン使用制限(${Math.floor(dynamicLimit)})を超えています。` +
         `現在の使用量: ${todayUsage.total_tokens}トークン。` +
-        `(1日上限: ${TOKEN_LIMITS.DAILY}トークン)`
+        `(1日上限: ${TOKEN_LIMITS.DAILY_LIMIT}トークン)`
       );
     }
 
@@ -376,77 +380,12 @@ export class Echo extends DurableObject<Env> {
   /**
    * Usage情報を日別に累積保存
    */
-  async accumulateUsage(usage: ResponseUsage): Promise<void> {
-    const dateKey = getTodayDateString();
+  async updateUsage(usage: Usage): Promise<void> {
+    const dateKey = formatDate(new Date());
     const usageRecord = (await this.storage.get<UsageRecord>('usage')) ?? {};
-
-    if (usageRecord[dateKey]) {
-      // 既存の使用量に累積
-      usageRecord[dateKey] = {
-        input_tokens: usageRecord[dateKey].input_tokens + usage.input_tokens,
-        input_tokens_details: {
-          cached_tokens:
-            usageRecord[dateKey].input_tokens_details.cached_tokens +
-            usage.input_tokens_details.cached_tokens,
-        },
-        output_tokens: usageRecord[dateKey].output_tokens + usage.output_tokens,
-        output_tokens_details: {
-          reasoning_tokens:
-            usageRecord[dateKey].output_tokens_details.reasoning_tokens +
-            usage.output_tokens_details.reasoning_tokens,
-        },
-        total_tokens: usageRecord[dateKey].total_tokens + usage.total_tokens,
-      };
-    } else {
-      // 新しい日付のため初期値として設定
-      usageRecord[dateKey] = usage;
-    }
-
-    await this.storage.put('usage', usageRecord);
+    await this.storage.put('usage', addUsage(usageRecord, dateKey, usage));
     await this.logger.debug(
       `Usage accumulated for ${dateKey}: ${JSON.stringify(usageRecord[dateKey], null, 2)}`
     );
   }
-}
-
-/**
- * 今日の日付を YYYY-MM-DD 形式で取得
- */
-function getTodayDateString(): string {
-  const today = new Date();
-  const isoString = today.toISOString();
-  const datePart = isoString.split('T')[0];
-  if (datePart === undefined || datePart === '') {
-    throw new Error('Failed to extract date from ISO string');
-  }
-  return datePart;
-}
-
-/**
- * 現在時刻に基づいて動的なトークン使用制限を計算
- */
-function calculateDynamicTokenLimit(): number {
-  const now = new Date();
-  const currentHour = now.getHours() + now.getMinutes() / 60;
-
-  // 理想的な使用量（現在時刻までの按分）
-  const idealUsageAtThisTime = TOKEN_LIMITS.DAILY * (currentHour / 24);
-
-  // 余裕を持たせた許可量
-  const allowedUsageWithBuffer =
-    idealUsageAtThisTime * TOKEN_LIMITS.BUFFER_FACTOR;
-
-  // 上限は1日の制限を超えない
-  return Math.min(allowedUsageWithBuffer, TOKEN_LIMITS.DAILY);
-}
-
-/**
- * 現在時刻に基づいて動的なトークン使用制限を計算
- */
-function calculateDynamicTokenSoftLimit(): number {
-  const now = new Date();
-  const currentHour = now.getHours() + now.getMinutes() / 60;
-
-  // 理想的な使用量（現在時刻までの按分）
-  return Math.floor((TOKEN_LIMITS.DAILY / 2) * (currentHour / 24));
 }

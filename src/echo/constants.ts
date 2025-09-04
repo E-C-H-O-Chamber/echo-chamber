@@ -7,7 +7,9 @@
  */
 export const TOKEN_LIMITS = {
   /** 1日あたりの最大トークン使用量 */
-  DAILY: 1_000_000,
+  DAILY_LIMIT: 1_000_000,
+  /** 1日あたりの余剰トークン使用量 */
+  DAILY_SOFT_LIMIT: 500_000,
   /** 時間按分計算での余裕係数 */
   BUFFER_FACTOR: 1.5,
 } as const;
