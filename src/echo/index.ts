@@ -97,6 +97,11 @@ export class Echo extends DurableObject<Env> {
         await this.run();
         return c.text('OK.');
       })
+      .post('/reset', async (c) => {
+        await this.storage.put('context', '');
+        await this.storage.put('tasks', []);
+        return c.text('OK.');
+      })
       .get('/usage', async (c) => {
         const allUsage = await this.getAllUsage();
         return c.json(allUsage);
