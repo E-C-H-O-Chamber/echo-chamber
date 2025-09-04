@@ -2,8 +2,10 @@ import { DurableObject } from 'cloudflare:workers';
 import { Hono } from 'hono';
 
 import { getUnreadMessageCount } from '../discord';
+import { getErrorMessage } from '../utils/error';
 import { createLogger } from '../utils/logger';
 
+import { ALARM_CONFIG, TOKEN_LIMITS } from './constants';
 import { ThinkingEngine } from './thinking-engine';
 
 import type { Logger } from '../utils/logger';
@@ -12,10 +14,11 @@ import type { ResponseUsage } from 'openai/resources/responses/responses';
 type EchoState = 'Idling' | 'Running' | 'Sleeping';
 type UsageRecord = Record<string, ResponseUsage>;
 
-// 1日のトークン使用量閾値
-const DAILY_TOKEN_LIMIT = 1_000_000;
-// 時間按分での余裕係数
-const USAGE_BUFFER_FACTOR = 1.5;
+interface Task {
+  name: string;
+  content: string;
+  execution_time: string;
+}
 
 export class Echo extends DurableObject<Env> {
   private readonly store: KVNamespace;
@@ -104,7 +107,9 @@ export class Echo extends DurableObject<Env> {
 
   async setNextAlarm(): Promise<void> {
     const nextAlarm = new Date();
-    nextAlarm.setMinutes(nextAlarm.getMinutes() + 1);
+    nextAlarm.setMinutes(
+      nextAlarm.getMinutes() + ALARM_CONFIG.INTERVAL_MINUTES
+    );
     nextAlarm.setSeconds(0);
     nextAlarm.setMilliseconds(0);
     await this.storage.setAlarm(nextAlarm);
@@ -183,8 +188,7 @@ export class Echo extends DurableObject<Env> {
       // sleep 処理
     } catch (error) {
       await this.logger.error(
-        'Echo encountered an error during sleep:',
-        error instanceof Error ? error : new Error(String(error))
+        `Echo encountered an error during sleep: ${getErrorMessage(error)}`
       );
     } finally {
       // await this.setNextAlarm();
@@ -193,30 +197,106 @@ export class Echo extends DurableObject<Env> {
   }
 
   async run(): Promise<void> {
-    const id = await this.getId();
-
-    if (id === 'Echo') {
-      await this.logger.error('Echo ID is not set. Cannot run without an ID.');
-      await this.storage.deleteAlarm();
+    if (!(await this.validateRunPreconditions())) {
       return;
     }
 
+    await this.setState('Running');
     const name = await this.getName();
+    await this.logger.info(`${name}が思考を開始しました。`);
+
+    try {
+      const usage = await this.thinkingEngine.think();
+      await this.logger.info(`usage: ${usage.total_tokens}`);
+      await this.accumulateUsage(usage);
+      await this.logger.info(`${name}が思考を正常に完了しました。`);
+    } catch (error) {
+      await this.logger.error(
+        `${name}の思考中にエラーが発生しました: ${getErrorMessage(error)}`
+      );
+    } finally {
+      await this.setState('Idling');
+    }
+  }
+
+  /**
+   * 実行前の前提条件を検証
+   */
+  private async validateRunPreconditions(): Promise<boolean> {
+    // Stateチェック
+    if (!(await this.validateEchoState())) {
+      return false;
+    }
+
+    // 未読メッセージがあれば実行
+    if (await this.validateChatMessage()) {
+      return true;
+    }
+
+    // Usageチェック
+    const usageValidationMessage = await this.validateUsageLimit();
+
+    // 実行すべきタスクがあれば実行
+    if (await this.validateTask()) {
+      if (usageValidationMessage) {
+        await this.logger.warn(usageValidationMessage);
+        return false;
+      }
+      return true;
+    }
+
+    // tokenが余っていれば実行
+    const softLimit = calculateDynamicTokenSoftLimit();
+    const todayUsage = await this.getTodayUsage();
+    const totalTokens = todayUsage?.total_tokens ?? 0;
+    if (totalTokens < softLimit) {
+      await this.logger.info(
+        `Usage: ${totalTokens}  (Soft limit: ${Math.floor(softLimit)})`
+      );
+      return true;
+    }
+
+    // どの条件も満たしていない場合は実行しない
+    return false;
+  }
+
+  /**
+   * Echoの状態を検証
+   */
+  private async validateEchoState(): Promise<boolean> {
+    const id = await this.getId();
+    const name = await this.getName();
+
+    // IDが未登録の場合は実行できない
+    if (id === 'Echo') {
+      await this.logger.error('Echo ID is not set. Cannot validate state.');
+      return false;
+    }
+
     const state = await this.getState();
 
+    // 睡眠中は実行できない
     if (state === 'Sleeping') {
       await this.logger.warn(
         `${name} is currently sleeping! Cannot run while sleeping.`
       );
-      return;
+      return false;
     }
 
+    // 既に実行中の場合は何もしない
     if (state === 'Running') {
-      await this.logger.info(`${name} is already running.`);
-      return;
+      await this.logger.warn(`${name} is already running.`);
+      return false;
     }
 
-    // Usage閾値チェック（時間按分+余裕度考慮）
+    return true;
+  }
+
+  /**
+   * Usageの制限を検証
+   */
+  private async validateUsageLimit(): Promise<string> {
+    const name = await this.getName();
     const todayUsage = await this.getTodayUsage();
     const dynamicLimit = calculateDynamicTokenLimit();
 
@@ -227,48 +307,70 @@ export class Echo extends DurableObject<Env> {
         minute: '2-digit',
       });
 
-      await this.logger.warn(
+      return (
         `${name}の現在時刻(${timeStr})におけるトークン使用制限(${Math.floor(dynamicLimit)})を超えています。` +
-          `現在の使用量: ${todayUsage.total_tokens}トークン。` +
-          `(1日上限: ${DAILY_TOKEN_LIMIT}トークン)`
+        `現在の使用量: ${todayUsage.total_tokens}トークン。` +
+        `(1日上限: ${TOKEN_LIMITS.DAILY}トークン)`
       );
-      return;
     }
+
+    return '';
+  }
+
+  /**
+   * 未読メッセージがあるか検証
+   */
+  private async validateChatMessage(): Promise<boolean> {
+    const id = await this.getId();
+    const name = await this.getName();
 
     const channelId = await this.store.get<string>(
       `chat_channel_discord_${id}`
     );
+
     if (channelId === null) {
       await this.logger.error(`${name}のチャンネルIDが設定されていません。`);
-      return;
+      return false;
     }
 
     const unreadCount = await getUnreadMessageCount(
       this.env.DISCORD_BOT_TOKEN_RIN,
       channelId
     );
-    await this.logger.info(`${name}の未読メッセージ数: ${unreadCount}`);
-    if (unreadCount === 0) {
-      await this.logger.info(`未読メッセージがありません。`);
-      return;
+    if (unreadCount > 0) {
+      await this.logger.info(`${name}の未読メッセージ数: ${unreadCount}`);
+    } else {
+      await this.logger.debug(`${name}の未読メッセージはありません。`);
     }
 
-    await this.setState('Running');
-    await this.logger.info(`${name}が思考を開始しました。`);
+    return unreadCount > 0;
+  }
 
-    try {
-      const usage = await this.thinkingEngine.think();
-      await this.logger.info(`usage: ${usage.total_tokens}`);
-      await this.accumulateUsage(usage);
-      await this.logger.info(`${name}が思考を正常に完了しました。`);
-    } catch (error) {
-      await this.logger.error(
-        `${name}の思考中にエラーが発生しました:`,
-        error instanceof Error ? error : new Error(String(error))
-      );
-    } finally {
-      await this.setState('Idling');
+  /**
+   * 実行すべきタスクがあるか検証
+   */
+  private async validateTask(): Promise<boolean> {
+    const tasks = await this.storage.get<Task[]>('tasks');
+    if (!tasks) {
+      await this.logger.debug('タスクがありません。');
+      return false;
     }
+
+    const nextTime = new Date();
+    nextTime.setMinutes(nextTime.getMinutes() + ALARM_CONFIG.INTERVAL_MINUTES);
+
+    const taskToExecute = tasks.find((task) => {
+      const taskExecutionTime = new Date(task.execution_time);
+      return taskExecutionTime < nextTime;
+    });
+
+    if (taskToExecute) {
+      await this.logger.info(`予定されたタスク: ${taskToExecute.name}`);
+    } else {
+      await this.logger.debug('予定されたタスクなし');
+    }
+
+    return !!taskToExecute;
   }
 
   /**
@@ -328,11 +430,23 @@ function calculateDynamicTokenLimit(): number {
   const currentHour = now.getHours() + now.getMinutes() / 60;
 
   // 理想的な使用量（現在時刻までの按分）
-  const idealUsageAtThisTime = DAILY_TOKEN_LIMIT * (currentHour / 24);
+  const idealUsageAtThisTime = TOKEN_LIMITS.DAILY * (currentHour / 24);
 
   // 余裕を持たせた許可量
-  const allowedUsageWithBuffer = idealUsageAtThisTime * USAGE_BUFFER_FACTOR;
+  const allowedUsageWithBuffer =
+    idealUsageAtThisTime * TOKEN_LIMITS.BUFFER_FACTOR;
 
   // 上限は1日の制限を超えない
-  return Math.min(allowedUsageWithBuffer, DAILY_TOKEN_LIMIT);
+  return Math.min(allowedUsageWithBuffer, TOKEN_LIMITS.DAILY);
+}
+
+/**
+ * 現在時刻に基づいて動的なトークン使用制限を計算
+ */
+function calculateDynamicTokenSoftLimit(): number {
+  const now = new Date();
+  const currentHour = now.getHours() + now.getMinutes() / 60;
+
+  // 理想的な使用量（現在時刻までの按分）
+  return Math.floor((TOKEN_LIMITS.DAILY / 2) * (currentHour / 24));
 }
