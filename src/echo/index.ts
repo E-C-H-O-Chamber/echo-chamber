@@ -2,16 +2,9 @@ import { DurableObject } from 'cloudflare:workers';
 import { Hono } from 'hono';
 
 import { getUnreadMessageCount } from '../discord';
-import { OpenAIClient } from '../llm/openai/client';
-import {
-  checkNotificationsFunction,
-  readChatMessagesFunction,
-  sendChatMessageFunction,
-} from '../llm/openai/functions/chat';
-import { thinkDeeplyFunction } from '../llm/openai/functions/think';
-import { getCurrentTimeFunction } from '../llm/openai/functions/time';
-import { echoSystemMessage } from '../llm/prompts/system';
 import { createLogger } from '../utils/logger';
+
+import { ThinkingEngine } from './thinking-engine';
 
 import type { Logger } from '../utils/logger';
 import type { ResponseUsage } from 'openai/resources/responses/responses';
@@ -29,6 +22,7 @@ export class Echo extends DurableObject<Env> {
   private readonly storage: DurableObjectStorage;
   private readonly router: Hono;
   private readonly logger: Logger;
+  private readonly thinkingEngine: ThinkingEngine;
 
   /**
    * The constructor is invoked once upon creation of the Durable Object, i.e. the first call to
@@ -42,6 +36,15 @@ export class Echo extends DurableObject<Env> {
     this.store = env.ECHO_KV;
     this.storage = ctx.storage;
     this.logger = createLogger(env);
+    this.thinkingEngine = new ThinkingEngine({
+      env,
+      storage: this.storage,
+      store: this.store,
+      logger: this.logger,
+      // 既存仕様踏襲: 固定ID/トークン（後続の段階で動的化）
+      discordBotToken: env.DISCORD_BOT_TOKEN_RIN,
+      echoId: 'rin',
+    });
     this.router = new Hono()
       .basePath('/:id')
       .get('/', async (c) => {
@@ -254,34 +257,9 @@ export class Echo extends DurableObject<Env> {
     await this.logger.info(`${name}が思考を開始しました。`);
 
     try {
-      const openai = new OpenAIClient(
-        this.env,
-        [
-          getCurrentTimeFunction,
-          checkNotificationsFunction,
-          readChatMessagesFunction,
-          sendChatMessageFunction,
-          thinkDeeplyFunction,
-        ],
-        {
-          echoId: id,
-          store: this.store,  
-          storage: this.storage,
-          discordBotToken: this.env.DISCORD_BOT_TOKEN_RIN,
-          logger: this.logger,
-        }
-      );
-      const messages = [
-        {
-          role: 'system' as const,
-          content: echoSystemMessage,
-        },
-      ];
-      const usage = await openai.call(messages);
-
-      // Usage情報を累積保存
+      const usage = await this.thinkingEngine.think();
+      await this.logger.info(`usage: ${usage.total_tokens}`);
       await this.accumulateUsage(usage);
-
       await this.logger.info(`${name}が思考を正常に完了しました。`);
     } catch (error) {
       await this.logger.error(
