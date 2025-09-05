@@ -25,6 +25,11 @@
       "command": "npx",
       "args": ["-y", "@mizchi/lsmcp", "-p", "tsgo"],
       "env": {}
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "env": {}
     }
   }
 }

@@ -13,7 +13,8 @@
       "mcp__cloudflare-docs",
       "mcp__cloudflare-observability",
       "mcp__cloudflare-browser",
-      "mcp__typescript"
+      "mcp__typescript",
+      "mcp__playwright"
     ],
     "deny": []
   },
