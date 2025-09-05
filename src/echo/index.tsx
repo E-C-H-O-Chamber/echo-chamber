@@ -48,19 +48,17 @@ export class Echo extends DurableObject<Env> {
         const id = await this.getId();
         const name = await this.getName();
         const state = await this.getState();
-        const nextAlarm = await this.storage.getAlarm();
-        const context = await this.storage.get<string>('context');
-        const tasks = (await this.storage.get<Task[]>('tasks')) ?? [];
+        const nextAlarm = await this.getNextAlarm();
+        const context = await this.getContext();
+        const tasks = await this.getTasks();
         const usage = await this.getAllUsage();
         return c.render(
           <StatusPage
             id={id}
             name={name}
             state={state}
-            nextAlarm={
-              nextAlarm != null ? formatDatetime(new Date(nextAlarm)) : null
-            }
-            context={context ?? ''}
+            nextAlarm={nextAlarm}
+            context={context}
             tasks={tasks}
             usage={usage}
           />
@@ -70,16 +68,16 @@ export class Echo extends DurableObject<Env> {
         const id = await this.getId();
         const name = await this.getName();
         const state = await this.getState();
-        const nextAlarm = await this.storage.getAlarm();
-        const context = await this.storage.get<string>('context');
-        const tasks = (await this.storage.get<Task[]>('tasks')) ?? [];
+        const nextAlarm = await this.getNextAlarm();
+        const context = await this.getContext();
+        const tasks = await this.getTasks();
         const usage = await this.getAllUsage();
         return c.json({
           id,
           name,
           state,
-          nextAlarm: nextAlarm != null ? new Date(nextAlarm) : null,
-          context: context ?? '',
+          nextAlarm,
+          context,
           tasks,
           usage,
         });
@@ -106,7 +104,7 @@ export class Echo extends DurableObject<Env> {
       })
       .delete('/tasks/', async (c) => {
         const taskName = c.req.query('name');
-        const tasks = (await this.storage.get<Task[]>('tasks')) ?? [];
+        const tasks = await this.getTasks();
         if (!tasks.find((t) => t.name === taskName)) {
           return c.text('Task not found', 404);
         }
@@ -133,6 +131,14 @@ export class Echo extends DurableObject<Env> {
     );
     await this.setNextAlarm();
     await this.run();
+  }
+
+  async getNextAlarm(): Promise<string | null> {
+    const nextAlarm = await this.storage.getAlarm();
+    if (nextAlarm == null) {
+      return null;
+    }
+    return formatDatetime(new Date(nextAlarm));
   }
 
   async setNextAlarm(): Promise<void> {
@@ -165,19 +171,30 @@ export class Echo extends DurableObject<Env> {
     await this.storage.put('state', newState);
   }
 
-  /**
-   * 今日のUsage情報を取得
-   */
-  async getTodayUsage(): Promise<Usage | null> {
-    const usageRecord = (await this.storage.get<UsageRecord>('usage')) ?? {};
-    return usageRecord[formatDate(new Date())] ?? null;
+  async getContext(): Promise<string> {
+    const context = await this.storage.get<string>('context');
+    return context ?? '';
+  }
+
+  async getTasks(): Promise<Task[]> {
+    const tasks = await this.storage.get<Task[]>('tasks');
+    return tasks ?? [];
   }
 
   /**
    * 全期間のUsage履歴を取得
    */
   async getAllUsage(): Promise<UsageRecord> {
-    return (await this.storage.get<UsageRecord>('usage')) ?? {};
+    const usage = await this.storage.get<UsageRecord>('usage');
+    return usage ?? {};
+  }
+
+  /**
+   * 今日のUsage情報を取得
+   */
+  async getTodayUsage(): Promise<Usage | null> {
+    const usageRecord = await this.getAllUsage();
+    return usageRecord[formatDate(new Date())] ?? null;
   }
 
   async wake(id: string, force = false): Promise<void> {
@@ -383,8 +400,8 @@ export class Echo extends DurableObject<Env> {
    * 実行すべきタスクがあるか検証
    */
   private async validateTask(): Promise<boolean> {
-    const tasks = await this.storage.get<Task[]>('tasks');
-    if (!tasks) {
+    const tasks = await this.getTasks();
+    if (tasks.length === 0) {
       await this.logger.debug('タスクがありません。');
       return false;
     }
@@ -411,7 +428,7 @@ export class Echo extends DurableObject<Env> {
    */
   async updateUsage(usage: Usage): Promise<void> {
     const dateKey = formatDate(new Date());
-    const usageRecord = (await this.storage.get<UsageRecord>('usage')) ?? {};
+    const usageRecord = await this.getAllUsage();
     await this.storage.put('usage', addUsage(usageRecord, dateKey, usage));
     await this.logger.debug(
       `Usage accumulated for ${dateKey}: ${JSON.stringify(usageRecord[dateKey], null, 2)}`
