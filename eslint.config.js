@@ -25,7 +25,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/**/*.ts', 'test/**/*.ts'],
+    files: ['src/**/*.ts', 'src/**/*.tsx', 'test/**/*.ts'],
     languageOptions: {
       globals: { ...globals.node },
       parser: tsparser,

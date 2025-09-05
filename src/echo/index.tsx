@@ -2,24 +2,17 @@ import { DurableObject } from 'cloudflare:workers';
 import { Hono } from 'hono';
 
 import { getUnreadMessageCount } from '../discord';
-import { formatDate } from '../utils/datetime';
+import { formatDate, formatDatetime } from '../utils/datetime';
 import { getErrorMessage } from '../utils/error';
 import { createLogger } from '../utils/logger';
 
 import { ALARM_CONFIG, TOKEN_LIMITS } from './constants';
 import { ThinkingEngine } from './thinking-engine';
 import { addUsage, calculateDynamicTokenLimit, convertUsage } from './usage';
+import { StatusPage } from './view/pages/StatusPage';
 
-import type { Usage, UsageRecord } from './usage';
+import type { EchoState, Task, Usage, UsageRecord } from './types';
 import type { Logger } from '../utils/logger';
-
-type EchoState = 'Idling' | 'Running' | 'Sleeping';
-
-interface Task {
-  name: string;
-  content: string;
-  execution_time: string;
-}
 
 export class Echo extends DurableObject<Env> {
   private readonly store: KVNamespace;
@@ -55,32 +48,41 @@ export class Echo extends DurableObject<Env> {
         const id = await this.getId();
         const name = await this.getName();
         const state = await this.getState();
-        const context = await this.storage.get<string>('context');
-        const tasks = await this.storage.get('tasks');
         const nextAlarm = await this.storage.getAlarm();
+        const context = await this.storage.get<string>('context');
+        const tasks = (await this.storage.get<Task[]>('tasks')) ?? [];
         const usage = await this.getAllUsage();
-        return c.json(
-          {
-            id,
-            name,
-            state,
-            context,
-            tasks,
-            nextAlarm:
-              nextAlarm != null ? new Date(nextAlarm).toISOString() : null,
-            usage: Object.fromEntries(
-              Object.entries(usage).map(([date, usage]) => [
-                date,
-                usage.total_tokens,
-              ])
-            ),
-            logLevel: this.logger.level,
-          },
-          200,
-          {
-            'Content-Type': 'application/json; charset=utf-8',
-          }
+        return c.render(
+          <StatusPage
+            id={id}
+            name={name}
+            state={state}
+            nextAlarm={
+              nextAlarm != null ? formatDatetime(new Date(nextAlarm)) : null
+            }
+            context={context ?? ''}
+            tasks={tasks}
+            usage={usage}
+          />
         );
+      })
+      .get('/json', async (c) => {
+        const id = await this.getId();
+        const name = await this.getName();
+        const state = await this.getState();
+        const nextAlarm = await this.storage.getAlarm();
+        const context = await this.storage.get<string>('context');
+        const tasks = (await this.storage.get<Task[]>('tasks')) ?? [];
+        const usage = await this.getAllUsage();
+        return c.json({
+          id,
+          name,
+          state,
+          nextAlarm: nextAlarm != null ? new Date(nextAlarm) : null,
+          context: context ?? '',
+          tasks,
+          usage,
+        });
       })
       .post('/wake', async (c) => {
         await this.wake(c.req.param('id'), true);
@@ -100,6 +102,18 @@ export class Echo extends DurableObject<Env> {
       .post('/reset', async (c) => {
         await this.storage.put('context', '');
         await this.storage.put('tasks', []);
+        return c.text('OK.');
+      })
+      .delete('/tasks/', async (c) => {
+        const taskName = c.req.query('name');
+        const tasks = (await this.storage.get<Task[]>('tasks')) ?? [];
+        if (!tasks.find((t) => t.name === taskName)) {
+          return c.text('Task not found', 404);
+        }
+        await this.storage.put(
+          'tasks',
+          tasks.filter((t) => t.name !== taskName)
+        );
         return c.text('OK.');
       })
       .get('/usage', async (c) => {

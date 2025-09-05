@@ -1,16 +1,5 @@
+import type { Usage, UsageRecord } from './types';
 import type { ResponseUsage } from 'openai/resources/responses/responses';
-
-export interface Usage {
-  cached_input_tokens: number;
-  uncached_input_tokens: number;
-  total_input_tokens: number;
-  output_tokens: number;
-  reasoning_tokens: number;
-  total_tokens: number;
-  total_cost: number;
-}
-
-export type UsageRecord = Record<string, Usage>;
 
 /**
  * 既存のUsageRecordに新しいUsageを加算する
