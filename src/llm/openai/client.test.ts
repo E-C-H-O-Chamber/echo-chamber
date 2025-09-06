@@ -1,6 +1,8 @@
 import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { mockToolContext } from '../../../test/mocks/tool';
+
 import {
   accumulateUsage,
   formatLogOutput,
@@ -10,9 +12,8 @@ import {
   formatBlock,
   formatFunctionCall,
   OpenAIClient,
-} from '../../../../src/llm/openai/client';
-import { thinkDeeplyFunction } from '../../../../src/llm/openai/functions/think';
-import { mockToolContext } from '../../../mocks/tool';
+} from './client';
+import { thinkDeeplyFunction } from './functions/think';
 
 import type {
   ResponseUsage,

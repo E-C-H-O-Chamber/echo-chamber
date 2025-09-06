@@ -27,7 +27,7 @@
 ## Testing Guidelines
 
 - Framework: Vitest with `@cloudflare/vitest-pool-workers` (Workers/miniflare pool). Globals enabled.
-- Location: place tests under `test/unit/**` and helpers in `test/helpers/**`.
+- Location: place tests under `src/**/**.test.ts` and helpers in `test/helpers/**`.
 - Coverage: Istanbul provider includes `src/**/*.ts` (excludes logger/discord API). Aim to keep or raise existing coverage.
 - Run locally: `pnpm test` (watch) or `pnpm test:coverage` for reports.
 

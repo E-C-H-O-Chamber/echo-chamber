@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { getCurrentTimeFunction } from '../../../../../src/llm/openai/functions/time';
-import { mockToolContext } from '../../../../mocks/tool';
+import { mockToolContext } from '../../../../test/mocks/tool';
+
+import { getCurrentTimeFunction } from './time';
 
 describe('getCurrentTimeFunction', () => {
   beforeAll(() => {

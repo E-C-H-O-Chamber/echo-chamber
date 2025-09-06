@@ -1,27 +1,28 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { createDiscordMessagesResponse } from '../../../../test/helpers/discord';
+import { mockToolContext } from '../../../../test/mocks/tool';
 import {
   addReactionToMessage,
   getChannelMessages,
   getUnreadMessageCount,
   sendChannelMessage,
-} from '../../../../../src/discord';
+} from '../../../discord';
+
 import {
   addReactionToChatMessageFunction,
   checkNotificationsFunction,
   readChatMessagesFunction,
   sendChatMessageFunction,
-} from '../../../../../src/llm/openai/functions/chat';
-import { createDiscordMessagesResponse } from '../../../../helpers/discord';
-import { mockToolContext } from '../../../../mocks/tool';
+} from './chat';
 
 const CHAT_UNAVAILABLE_ERROR = 'Chat tool is currently unavailable.';
 const CHAT_API_ERROR = 'Chat API error';
 
-vi.mock('../../../../../src/discord', async (importOriginal) => {
+vi.mock('../../../discord', async (importOriginal) => {
   const actual =
     // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-    await importOriginal<typeof import('../../../../../src/discord')>();
+    await importOriginal<typeof import('../../../discord')>();
   return {
     ...actual,
     getUnreadMessageCount: vi.fn(),

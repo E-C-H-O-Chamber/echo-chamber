@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { thinkDeeplyFunction } from '../../../../../src/llm/openai/functions/think';
-import { mockToolContext } from '../../../../mocks/tool';
+import { mockToolContext } from '../../../../test/mocks/tool';
+
+import { thinkDeeplyFunction } from './think';
 
 describe('thinkDeeplyFunction', () => {
   it('name', () => {

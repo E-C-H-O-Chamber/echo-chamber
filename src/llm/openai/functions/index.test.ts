@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import {
-  Tool,
-  type ToolResult,
-} from '../../../../../src/llm/openai/functions/index';
-import { mockToolContext } from '../../../../mocks/tool';
+import { mockToolContext } from '../../../../test/mocks/tool';
+
+import { Tool, type ToolResult } from './index';
 
 describe('Tool', () => {
   const mockName = 'test_tool';

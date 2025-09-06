@@ -162,7 +162,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['test/**/*.ts'],
+    files: ['src/**/*.test.ts'],
     rules: {
       'max-lines-per-function': 'off',
     },

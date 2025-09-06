@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  storeContextFunction,
-  recallContextFunction,
-} from '../../../../../src/llm/openai/functions/context';
-import { mockToolContext } from '../../../../mocks/tool';
+import { mockToolContext } from '../../../../test/mocks/tool';
+
+import { storeContextFunction, recallContextFunction } from './context';
 
 describe('Context Functions', () => {
   beforeEach(() => {

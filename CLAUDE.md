@@ -98,23 +98,20 @@ This approach ensures continuous quality verification while respecting Claude Co
 
 ### Test Structure
 
-```
-test/
-├── unit/           # Pure function and component tests
-│   ├── echo/      # Echo Durable Object unit tests
-│   ├── llm/       # OpenAI client and functions tests
-│   └── discord/   # Discord API integration tests
-├── integration/    # End-to-end workflow tests using SELF.fetch()
-├── characterization/ # Legacy code behavior documentation tests
-├── mocks/          # External API mocks (Discord, OpenAI)
-├── fixtures/       # Shared test data and constants
-└── helpers/        # Common test utilities and setup
-```
+**Co-location Pattern:** Tests are co-located with source code using the `.test.ts` suffix. Each module's tests are placed alongside its implementation files within the `src/` directory.
 
-**Running Specific Tests:**
+**Discovery & Execution:**
 
-- `pnpm test:run test/unit/echo/` - Run all Echo tests
-- `pnpm test:run test/unit/llm/openai/functions/chat.spec.ts` - Run specific test file
+- Use `Glob` tool with pattern `src/**/*.test.ts` to find all test files
+- Run directory tests: `pnpm test:run src/path/to/module/`
+- Run specific file: `pnpm test:run src/path/to/file.test.ts`
+- Run all tests: `pnpm test:run`
+
+**Key Benefits of Co-location:**
+
+- Tests are immediately discoverable next to their implementation
+- Module boundaries are clear and testable units are obvious
+- Refactoring moves tests and code together naturally
 
 ### Testing Patterns
 

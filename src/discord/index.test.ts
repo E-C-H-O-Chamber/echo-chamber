@@ -1,14 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  createDiscordCurrentUserResponse,
+  createDiscordMessagesResponse,
+} from '../../test/helpers/discord';
+
+import {
   getChannelMessages,
   getCurrentUser,
   getUnreadMessageCount,
-} from '../../../src/discord';
-import {
-  createDiscordCurrentUserResponse,
-  createDiscordMessagesResponse,
-} from '../../helpers/discord';
+} from './index';
 
 const TOKEN = 'TEST_DISCORD_BOT_TOKEN';
 const CHANNEL_ID = 'test-channel-id';

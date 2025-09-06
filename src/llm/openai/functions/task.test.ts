@@ -8,14 +8,15 @@ import {
   vi,
 } from 'vitest';
 
+import { mockToolContext } from '../../../../test/mocks/tool';
+
 import {
   createTaskFunction,
   listTaskFunction,
   updateTaskFunction,
   deleteTaskFunction,
   completeTaskFunction,
-} from '../../../../../src/llm/openai/functions/task';
-import { mockToolContext } from '../../../../mocks/tool';
+} from './task';
 
 beforeEach(() => {
   vi.resetAllMocks();
