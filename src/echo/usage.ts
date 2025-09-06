@@ -67,20 +67,30 @@ export function convertUsage(usage: ResponseUsage): Usage {
 
 /**
  * 現在時刻に基づいて動的なトークン使用制限を計算
+ * Asia/Tokyoタイムゾーンで午前7時から翌午前3時までの20時間で按分（分単位、少数以下切り捨て）
  */
 export function calculateDynamicTokenLimit(
   tokenLimit: number,
   bufferFactor = 1.0
 ): number {
-  const now = new Date();
-  const currentHour = now.getHours() + now.getMinutes() / 60;
+  // Asia/Tokyoの現在時刻を取得（UTC+9）
+  const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const hours = now.getUTCHours() + now.getUTCMinutes() / 60;
+
+  // 午前7時からの経過時間
+  const elapsed = hours >= 7 ? hours - 7 : hours + 17;
+
+  // 経過時間が20時間を超えた場合（午前3時から午前6時59分）は対象外として0トークンを返す
+  if (elapsed > 20) {
+    return 0;
+  }
 
   // 現在時刻までの按分
-  const idealUsageAtThisTime = tokenLimit * (currentHour / 24);
+  const rawTokenLimit = tokenLimit * (elapsed / 20);
 
-  // 余裕を持たせた許可量
-  const allowedUsageWithBuffer = idealUsageAtThisTime * bufferFactor;
+  // バッファ適用（少数部切り捨て）
+  const tokenLimitWithBuffer = Math.trunc(rawTokenLimit * bufferFactor);
 
   // 上限は制限を超えない
-  return Math.min(allowedUsageWithBuffer, tokenLimit);
+  return Math.min(tokenLimitWithBuffer, tokenLimit);
 }
