@@ -1,3 +1,9 @@
+/**
+ * 日時を指定されたタイムゾーンで 'YYYY/MM/DD HH:mm:ss' 形式にフォーマットする
+ *
+ * @param date - フォーマット対象の日時
+ * @param timezone - 使用するタイムゾーン（デフォルト: 'Asia/Tokyo'）
+ */
 export function formatDatetime(date: Date, timezone = 'Asia/Tokyo'): string {
   const formatter = new Intl.DateTimeFormat('ja-JP', {
     timeZone: timezone,
@@ -12,6 +18,12 @@ export function formatDatetime(date: Date, timezone = 'Asia/Tokyo'): string {
   return formatter.format(date);
 }
 
+/**
+ * 日付を指定されたタイムゾーンで 'YYYY-MM-DD' 形式にフォーマットする
+ *
+ * @param date - フォーマット対象の日時
+ * @param timezone - 使用するタイムゾーン（デフォルト: 'Asia/Tokyo'）
+ */
 export function formatDate(date: Date, timezone = 'Asia/Tokyo'): string {
   const formatter = new Intl.DateTimeFormat('ja-JP', {
     timeZone: timezone,
