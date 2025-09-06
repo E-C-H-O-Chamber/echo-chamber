@@ -1,3 +1,5 @@
+import { formatDatetime } from '../../../utils/datetime';
+
 import type { Task } from '../../types';
 import type { FC } from 'hono/jsx';
 
@@ -15,7 +17,7 @@ export const TaskList: FC<{ id: string; tasks: Task[] }> = async ({
           <div>
             <h3>{name}</h3>
             <div className="small muted mono">
-              {new Date(execution_time).toLocaleString('ja-JP')}
+              {formatDatetime(new Date(execution_time))}
             </div>
             <div className="small" style={{ marginTop: '6px' }}>
               {content}

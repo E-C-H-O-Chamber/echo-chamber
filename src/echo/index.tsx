@@ -358,6 +358,7 @@ export class Echo extends DurableObject<Env> {
     if (todayUsage && todayUsage.total_tokens >= dynamicLimit) {
       const now = new Date();
       const timeStr = now.toLocaleTimeString('ja-JP', {
+        timeZone: 'Asia/Tokyo',
         hour: '2-digit',
         minute: '2-digit',
       });

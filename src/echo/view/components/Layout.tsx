@@ -39,7 +39,7 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = async ({
         .chart-bars{display:flex;align-items:flex-end;gap:8px;flex:1;min-height:120px}
         .bar{flex:1;display:flex;flex-direction:column-reverse;align-items:center;gap:6px;height:100%}
         .bar-rect{width:100%;border-radius:6px;background:linear-gradient(180deg, #34d399 0%, #22c55e 100%)}
-        .bar-stack{width:100%;border-radius:6px;display:flex;flex-direction:column;position:relative;min-height:1px}
+        .bar-stack{width:100%;border-radius:6px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-height:1px}
         .bar-segment{width:100%;flex-shrink:0}
         .bar-segment:first-child{border-radius:6px 6px 0 0}
         .bar-segment:last-child{border-radius:0 0 6px 6px}
