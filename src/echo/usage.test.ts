@@ -1,9 +1,104 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { addUsage, convertUsage, calculateDynamicTokenLimit } from './usage';
+import {
+  addUsage,
+  convertUsage,
+  calculateDynamicTokenLimit,
+  getTodayUsageKey,
+} from './usage';
 
 import type { Usage, UsageRecord } from './types';
 import type { ResponseUsage } from 'openai/resources/responses/responses';
+
+describe('getTodayUsageKey', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('7時00分は当日の日付を返す', () => {
+    vi.setSystemTime(new Date('2025-09-06T07:00:00+09:00'));
+
+    const result = getTodayUsageKey();
+
+    expect(result).toBe('2025-09-06');
+  });
+
+  it('6時59分は前日の日付を返す', () => {
+    vi.setSystemTime(new Date('2025-09-06T06:59:59+09:00'));
+
+    const result = getTodayUsageKey();
+
+    expect(result).toBe('2025-09-05');
+  });
+
+  it('正午は当日の日付を返す', () => {
+    vi.setSystemTime(new Date('2025-09-06T12:00:00+09:00'));
+
+    const result = getTodayUsageKey();
+
+    expect(result).toBe('2025-09-06');
+  });
+
+  it('23時59分は当日の日付を返す', () => {
+    vi.setSystemTime(new Date('2025-09-06T23:59:59+09:00'));
+
+    const result = getTodayUsageKey();
+
+    expect(result).toBe('2025-09-06');
+  });
+
+  it('翌日0時00分は前日の日付を返す', () => {
+    vi.setSystemTime(new Date('2025-09-07T00:00:00+09:00'));
+
+    const result = getTodayUsageKey();
+
+    expect(result).toBe('2025-09-06');
+  });
+
+  it('月跨ぎ: 3月1日の6時59分は2月末日の日付を返す', () => {
+    vi.setSystemTime(new Date('2025-03-01T06:59:59+09:00'));
+
+    const result = getTodayUsageKey();
+
+    expect(result).toBe('2025-02-28');
+  });
+
+  it('年跨ぎ: 1月1日の6時59分は前年12月31日の日付を返す', () => {
+    vi.setSystemTime(new Date('2025-01-01T06:59:59+09:00'));
+
+    const result = getTodayUsageKey();
+
+    expect(result).toBe('2024-12-31');
+  });
+
+  it('うるう年の月跨ぎ: 3月1日の6時59分は2月29日の日付を返す', () => {
+    vi.setSystemTime(new Date('2024-03-01T06:59:59+09:00'));
+
+    const result = getTodayUsageKey();
+
+    expect(result).toBe('2024-02-29');
+  });
+
+  it('月跨ぎ確認: 3月1日の7時00分は当日の日付を返す', () => {
+    vi.setSystemTime(new Date('2025-03-01T07:00:00+09:00'));
+
+    const result = getTodayUsageKey();
+
+    expect(result).toBe('2025-03-01');
+  });
+
+  it('年跨ぎ確認: 1月1日の7時00分は当日の日付を返す', () => {
+    vi.setSystemTime(new Date('2025-01-01T07:00:00+09:00'));
+
+    const result = getTodayUsageKey();
+
+    expect(result).toBe('2025-01-01');
+  });
+});
 
 describe('addUsage', () => {
   it('新しいキーを追加する', () => {

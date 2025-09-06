@@ -2,13 +2,18 @@ import { DurableObject } from 'cloudflare:workers';
 import { Hono } from 'hono';
 
 import { getUnreadMessageCount } from '../discord';
-import { formatDate, formatDatetime } from '../utils/datetime';
+import { formatDatetime } from '../utils/datetime';
 import { getErrorMessage } from '../utils/error';
 import { createLogger } from '../utils/logger';
 
 import { ALARM_CONFIG, TOKEN_LIMITS } from './constants';
 import { ThinkingEngine } from './thinking-engine';
-import { addUsage, calculateDynamicTokenLimit, convertUsage } from './usage';
+import {
+  addUsage,
+  calculateDynamicTokenLimit,
+  convertUsage,
+  getTodayUsageKey,
+} from './usage';
 import { StatusPage } from './view/pages/StatusPage';
 
 import type { EchoState, Task, Usage, UsageRecord } from './types';
@@ -194,7 +199,7 @@ export class Echo extends DurableObject<Env> {
    */
   async getTodayUsage(): Promise<Usage | null> {
     const usageRecord = await this.getAllUsage();
-    return usageRecord[formatDate(new Date())] ?? null;
+    return usageRecord[getTodayUsageKey()] ?? null;
   }
 
   async wake(id: string, force = false): Promise<void> {
@@ -427,7 +432,7 @@ export class Echo extends DurableObject<Env> {
    * Usage情報を日別に累積保存
    */
   async updateUsage(usage: Usage): Promise<void> {
-    const dateKey = formatDate(new Date());
+    const dateKey = getTodayUsageKey();
     const usageRecord = await this.getAllUsage();
     await this.storage.put('usage', addUsage(usageRecord, dateKey, usage));
     await this.logger.debug(

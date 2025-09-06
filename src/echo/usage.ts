@@ -1,5 +1,15 @@
+import { formatDate } from '../utils/datetime';
+
 import type { Usage, UsageRecord } from './types';
 import type { ResponseUsage } from 'openai/resources/responses/responses';
+
+/**
+ * 今日の日付キーを 'YYYY-MM-DD' 形式で取得
+ * 午前7時を日付境界とし、7:00から翌6:59を同一日として扱う
+ */
+export function getTodayUsageKey(): string {
+  return formatDate(new Date(Date.now() - 7 * 60 * 60 * 1000));
+}
 
 /**
  * 既存のUsageRecordに新しいUsageを加算する
