@@ -1,10 +1,11 @@
 import { formatDate } from '../../../utils/datetime';
 import { Card } from '../components/Card';
+import { KnowledgeList } from '../components/KnowledgeList';
 import { Layout } from '../components/Layout';
 import { TaskList } from '../components/TaskList';
 import { UsageChart } from '../components/UsageChart';
 
-import type { Task, UsageRecord } from '../../types';
+import type { Knowledge, Task, UsageRecord } from '../../types';
 import type { FC } from 'hono/jsx';
 
 type EchoState = 'Idling' | 'Running' | 'Sleeping';
@@ -16,6 +17,7 @@ export interface StatusPageProps {
   nextAlarm: string | null;
   context: string;
   tasks: Task[];
+  knowledges: Knowledge[];
   usage: UsageRecord;
 }
 
@@ -26,6 +28,7 @@ export const StatusPage: FC<StatusPageProps> = async ({
   nextAlarm,
   context,
   tasks,
+  knowledges,
   usage,
 }) => {
   const usageData = Array.from({ length: 7 }).map((_, i) => {
@@ -81,6 +84,12 @@ export const StatusPage: FC<StatusPageProps> = async ({
         <div style={{ marginTop: '12px' }}>
           <Card title="Tasks">
             <TaskList id={id} tasks={tasks} />
+          </Card>
+        </div>
+
+        <div style={{ marginTop: '12px' }}>
+          <Card title="Knowledge">
+            <KnowledgeList id={id} knowledges={knowledges} />
           </Card>
         </div>
       </main>

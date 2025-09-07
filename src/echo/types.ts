@@ -17,3 +17,18 @@ export interface Usage {
 }
 
 export type UsageRecord = Record<string, Usage>;
+
+export type KnowledgeCategory =
+  | 'fact'
+  | 'experience'
+  | 'insight'
+  | 'pattern'
+  | 'other';
+
+export interface Knowledge {
+  content: string;
+  category: KnowledgeCategory;
+  tags: string[];
+  accessCount: number;
+  lastAccessedAt: string;
+}

@@ -16,7 +16,7 @@ import {
 } from './usage';
 import { StatusPage } from './view/pages/StatusPage';
 
-import type { EchoState, Task, Usage, UsageRecord } from './types';
+import type { EchoState, Knowledge, Task, Usage, UsageRecord } from './types';
 import type { Logger } from '../utils/logger';
 
 export class Echo extends DurableObject<Env> {
@@ -56,6 +56,7 @@ export class Echo extends DurableObject<Env> {
         const nextAlarm = await this.getNextAlarm();
         const context = await this.getContext();
         const tasks = await this.getTasks();
+        const knowledges = await this.getKnowledges();
         const usage = await this.getAllUsage();
         return c.render(
           <StatusPage
@@ -65,6 +66,7 @@ export class Echo extends DurableObject<Env> {
             nextAlarm={nextAlarm}
             context={context}
             tasks={tasks}
+            knowledges={knowledges}
             usage={usage}
           />
         );
@@ -76,6 +78,7 @@ export class Echo extends DurableObject<Env> {
         const nextAlarm = await this.getNextAlarm();
         const context = await this.getContext();
         const tasks = await this.getTasks();
+        const knowledges = await this.getKnowledges();
         const usage = await this.getAllUsage();
         return c.json({
           id,
@@ -84,6 +87,7 @@ export class Echo extends DurableObject<Env> {
           nextAlarm,
           context,
           tasks,
+          knowledges,
           usage,
         });
       })
@@ -184,6 +188,11 @@ export class Echo extends DurableObject<Env> {
   async getTasks(): Promise<Task[]> {
     const tasks = await this.storage.get<Task[]>('tasks');
     return tasks ?? [];
+  }
+
+  async getKnowledges(): Promise<Knowledge[]> {
+    const knowledges = await this.storage.get<Knowledge[]>('knowledge');
+    return knowledges ?? [];
   }
 
   /**
