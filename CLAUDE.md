@@ -1,13 +1,90 @@
-# CLAUDE.md
+# Claude Code Spec-Driven Development
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Kiro-style Spec Driven Development implementation using claude code slash commands, hooks and agents.
+
+## Project Context
+
+### Paths
+
+- Steering: `.kiro/steering/`
+- Specs: `.kiro/specs/`
+- Commands: `.claude/commands/`
+
+### Steering vs Specification
+
+**Steering** (`.kiro/steering/`) - Guide AI with project-wide rules and context
+**Specs** (`.kiro/specs/`) - Formalize development process for individual features
+
+### Active Specifications
+
+- Check `.kiro/specs/` for active specifications
+- Use `/kiro:spec-status [feature-name]` to check progress
+
+## Development Guidelines
+
+- Think in English, but generate responses in Japanese (思考は英語、回答の生成は日本語で行うように)
+
+## Workflow
+
+### Phase 0: Steering (Optional)
+
+`/kiro:steering` - Create/update steering documents
+`/kiro:steering-custom` - Create custom steering for specialized contexts
+
+**Note**: Optional for new features or small additions. Can proceed directly to spec-init.
+
+### Phase 1: Specification Creation
+
+1. `/kiro:spec-init [detailed description]` - Initialize spec with detailed project description
+2. `/kiro:spec-requirements [feature]` - Generate requirements document
+3. `/kiro:spec-design [feature]` - Interactive: "requirements.mdをレビューしましたか？ [y/N]"
+4. `/kiro:spec-tasks [feature]` - Interactive: Confirms both requirements and design review
+
+### Phase 2: Progress Tracking
+
+`/kiro:spec-status [feature]` - Check current progress and phases
+
+## Development Rules
+
+1. **Consider steering**: Run `/kiro:steering` before major development (optional for new features)
+2. **Follow 3-phase approval workflow**: Requirements → Design → Tasks → Implementation
+3. **Approval required**: Each phase requires human review (interactive prompt or manual)
+4. **No skipping phases**: Design requires approved requirements; Tasks require approved design
+5. **Update task status**: Mark tasks as completed when working on them
+6. **Keep steering current**: Run `/kiro:steering` after significant changes
+7. **Check spec compliance**: Use `/kiro:spec-status` to verify alignment
+
+## Steering Configuration
+
+### Current Steering Files
+
+Managed by `/kiro:steering` command. Updates here reflect command changes.
+
+### Active Steering Files
+
+- `product.md`: Always included - Product context and business objectives
+- `tech.md`: Always included - Technology stack and architectural decisions
+- `structure.md`: Always included - File organization and code patterns
+
+### Custom Steering Files
+
+<!-- Added by /kiro:steering-custom command -->
+<!-- Format:
+- `filename.md`: Mode - Pattern(s) - Description
+  Mode: Always|Conditional|Manual
+  Pattern: File patterns for Conditional mode
+-->
+
+### Inclusion Modes
+
+- **Always**: Loaded in every interaction (default)
+- **Conditional**: Loaded for specific file patterns (e.g., `"*.test.js"`)
+- **Manual**: Reference with `@filename.md` syntax
 
 ## Development Commands
 
 - `pnpm dev` - Start development server with type generation (combines `wrangler types && wrangler dev`)
-- `pnpm start` - Alternative development server command
 - `pnpm cf-typegen` - Generate TypeScript types from Wrangler configuration
-- `pnpm deploy` - Deploy to Cloudflare Workers
 - `pnpm test:run path/to/specific.test.ts` - Run a specific test file
 
 ## Quality Assurance Commands
@@ -15,8 +92,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **CRITICAL**: Always run these commands after code changes to ensure zero errors before task completion.
 
 - `pnpm lint:check` - ESLint with zero warnings tolerance (strict mode)
-- `pnpm typecheck` - TypeScript type checking
 - `pnpm format:check` - Prettier format checking
+- `pnpm typecheck` - TypeScript type checking
 - `pnpm lint` - ESLint with auto-fix (use for fixing, not checking)
 - `pnpm format` - Prettier with auto-format (use for fixing, not checking)
 
@@ -31,16 +108,6 @@ pnpm format:check
 
 **Never complete tasks with unresolved errors from these commands.**
 
-## Environment Configuration
-
-**Required Environment Variables:**
-
-- `OPENAI_API_KEY` - OpenAI API key for GPT-5 access
-- `DISCORD_BOT_TOKEN_RIN` - Discord bot token for Rin instance
-- `ENVIRONMENT` - Environment flag (`local` for development features)
-
-**Important**: Never commit secrets to repository. Use `wrangler secret put` for production deployment.
-
 ## Automated Testing Strategy
 
 This project implements **t-wada式TDD (Test-Driven Development)** using the latest Cloudflare Workers testing environment.
@@ -49,11 +116,8 @@ This project implements **t-wada式TDD (Test-Driven Development)** using the lat
 
 **CRITICAL**: Always run tests after code changes to ensure functionality is preserved.
 
-- `pnpm test` - Run all tests in watch mode (recommended for development)
 - `pnpm test:run` - Run tests once and exit
-- `pnpm test:ui` - Open Vitest UI for interactive testing
 - `pnpm test:coverage` - Generate test coverage report
-- `pnpm tdd` - **Recommended**: Watch mode with UI for t-wada式TDD
 
 ### Claude Code Testing Constraints
 
@@ -84,7 +148,7 @@ This approach ensures continuous quality verification while respecting Claude Co
 
 ### Testing Architecture
 
-**Technology Stack (2024 Best Practices):**
+**Technology Stack (2025 Best Practices):**
 
 - **@cloudflare/vitest-pool-workers** - Executes tests in `workerd` runtime environment
 - **Vitest** - Fast, modern test runner with TypeScript support
@@ -158,9 +222,9 @@ This approach ensures continuous quality verification while respecting Claude Co
 
 #### 絶対禁止事項
 
-❌ **テストと実装の同時変更**  
-❌ **Redフェーズのスキップ**  
-❌ **テスト実行せずに次ステップへ進む**  
+❌ **テストと実装の同時変更**
+❌ **Redフェーズのスキップ**
+❌ **テスト実行せずに次ステップへ進む**
 ❌ **一度に複数の変更**
 
 ### Characterization Tests
@@ -236,76 +300,3 @@ This application includes comprehensive OpenAI API usage tracking and management
 - Accumulates daily usage statistics in Durable Object storage
 - Implements dynamic token limits based on time-proportional allocation
 - Stores usage data by date: `{ "2025-07-28": ResponseUsage, ... }`
-
-### Dynamic Token Limiting
-
-**Algorithm:**
-
-```typescript
-// Base settings
-DAILY_TOKEN_LIMIT = 1,000,000 tokens
-USAGE_BUFFER_FACTOR = 1.5x
-
-// Dynamic calculation
-idealUsage = DAILY_TOKEN_LIMIT × (currentHour / 24)
-dynamicLimit = min(idealUsage × BUFFER_FACTOR, DAILY_TOKEN_LIMIT)
-```
-
-**Examples:**
-
-- 06:00 → 375,000 tokens allowed (250k × 1.5)
-- 12:00 → 750,000 tokens allowed (500k × 1.5)
-- 18:00 → 1,000,000 tokens allowed (750k × 1.5, capped at daily limit)
-
-### HTTP Endpoints
-
-**Usage Statistics:**
-
-- `GET /rin/` - Returns Echo status including `allUsage` field
-- `GET /rin/usage` - Full usage history
-- `GET /rin/usage/today` - Today's usage
-- `GET /rin/usage/:date` - Specific date usage (format: YYYY-MM-DD, e.g., 2025-07-28)
-
-### Operational Notes
-
-**Threshold Monitoring:**
-
-- Pre-execution check prevents API calls when dynamic limit exceeded
-- Detailed violation logs include current time, limit, actual usage, and daily cap
-- Early termination preserves remaining daily quota for later hours
-
-**Usage Data Structure:**
-
-```typescript
-ResponseUsage {
-  input_tokens: number
-  input_tokens_details: { cached_tokens: number }
-  output_tokens: number
-  output_tokens_details: { reasoning_tokens: number }
-  total_tokens: number
-}
-```
-
-**Configuration Adjustment:**
-Monitor violation logs and daily surplus patterns to optimize `USAGE_BUFFER_FACTOR` (currently 1.5x). Consider time-of-day specific multipliers if usage patterns show consistent trends.
-
-## Key Technologies
-
-**OpenAI Integration:**
-
-- Uses GPT-5 model (`gpt-5-2025-08-07`) with Responses API
-- Implements comprehensive usage tracking with `ResponseUsage` accumulation
-- Supports recursive function calling with parallel execution
-- Custom timeout and retry logic for reliability
-
-**Discord Integration:**
-
-- Built on `@discordjs/rest` and `discord-api-types`
-- Fully mocked for testing with realistic response patterns
-- Supports message reading, sending, and reaction management
-
-**Validation:**
-
-- Extensive use of Zod schemas for runtime type validation
-- All function parameters and API responses are validated
-- Type-safe configuration constants in `src/echo/constants.ts`

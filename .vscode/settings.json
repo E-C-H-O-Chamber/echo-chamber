@@ -5,6 +5,7 @@
   "cSpell.words": ["tsparser"],
   "markdownlint.config": {
     "no-emphasis-as-heading": false,
-    "fenced-code-language": false
+    "fenced-code-language": false,
+    "no-duplicate-heading": { "siblings_only": true }
   }
 }
