@@ -12,6 +12,8 @@ export const Layout: FC<PropsWithChildren<{ title?: string }>> = async ({
         content="width=device-width, initial-scale=1, viewport-fit=cover"
       />
       <title>{title}</title>
+      <link rel="icon" href="/favicon.ico" />
+      <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       <style>{`
         :root { --bg: #0b0f14; --card: #101721; --text: #e6edf3; --muted:#98a2b3; --accent:#6ee7b7; --warn:#f59e0b; --danger:#ef4444; --line:#1f2a37; }
         *{box-sizing:border-box}
