@@ -31,9 +31,13 @@ export const StatusPage: FC<StatusPageProps> = async ({
   knowledges,
   usage,
 }) => {
+  const today = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const usageData = Array.from({ length: 7 }).map((_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - 6 + i);
+    const date = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() - 6 + i
+    );
     return {
       date,
       usage: usage[formatDate(date)],
