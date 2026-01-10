@@ -40,11 +40,12 @@ export class OpenAIClient {
   async createResponse(input: ResponseInput): Promise<Response> {
     const response = await this.client.responses.create({
       input,
-      model: 'gpt-5-2025-08-07',
+
+      model: 'gpt-5.1',
       parallel_tool_calls: true,
       previous_response_id: this.previousResponseId,
       reasoning: {
-        effort: 'minimal',
+        effort: 'low',
       },
       store: true,
       stream: false,
@@ -52,7 +53,7 @@ export class OpenAIClient {
         format: {
           type: 'text',
         },
-        verbosity: 'low',
+        verbosity: 'medium',
       },
       tool_choice: 'auto',
       tools: this.tools.map((tool) => tool.definition),
@@ -181,7 +182,7 @@ export function formatLogOutput(output: ResponseOutputItem[]): string {
             const contentType = c.type;
             switch (contentType) {
               case 'output_text':
-                return `think: ${c.text}`;
+                return `*thinking: ${c.text}*`;
               case 'refusal':
                 return `*refusal: ${c.refusal}*`;
               default:
@@ -191,8 +192,23 @@ export function formatLogOutput(output: ResponseOutputItem[]): string {
             }
           })
           .join('\n\n');
+      } else if (item.type === 'reasoning') {
+        const content = (item.content ?? item.summary)
+          .map(({ text }) => text)
+          .join('\n');
+        if (!content) {
+          return '*reasoning*';
+        }
+        return `*reasoning: ${content}*`;
       } else if (item.type === 'function_call') {
-        return formatFunctionCallLogOutput(item);
+        const args = JSON.parse(item.arguments) as Record<string, unknown>;
+        const formatter = functionCallFormatters[item.name];
+
+        if (formatter) {
+          return formatter(args);
+        }
+
+        return `*${item.name}*`;
       }
     })
     .filter((msg) => msg !== undefined)
@@ -200,30 +216,33 @@ export function formatLogOutput(output: ResponseOutputItem[]): string {
     .trim();
 }
 
-function formatFunctionCallLogOutput(item: ResponseFunctionToolCall): string {
-  const args = JSON.parse(item.arguments) as Record<string, unknown>;
+const functionCallFormatters: Record<
+  string,
+  (args: Record<string, unknown>) => string
+> = {
+  get_current_time: (args) => `*get_current_time: ${args.timezone as string}*`,
+  read_chat_messages: (args) => `*read_chat_messages: ${args.limit as number}*`,
+  think_deeply: (args) => `*think_deeply: ${args.thought as string}*`,
+  store_context: (args) => `*store_context: ${args.context as string}*`,
+  create_task: (args) => `*create_task: ${args.name as string}*`,
+  update_task: (args) => `*update_task: ${args.name as string}*`,
+  delete_task: (args) => `*delete_task: ${args.name as string}*`,
+  complete_task: (args) => `*complete_task: ${args.name as string}*`,
+  store_knowledge: (args) => {
+    const knowledge = args.knowledge as string;
+    const category = args.category as string | undefined;
+    const tags = args.tags as string[] | undefined;
 
-  switch (item.name) {
-    case 'get_current_time':
-      return `*get_current_time: ${args.timezone as string}*`;
-    case 'read_chat_messages':
-      return `*read_chat_messages: ${args.limit as number}*`;
-    case 'think_deeply':
-      return `*think_deeply: ${args.thought as string}*`;
-    case 'store_context':
-      return `*store_context: ${args.context as string}*`;
-    case 'create_task':
-      return `*create_task: ${args.name as string}*`;
-    case 'update_task':
-      return `*update_task: ${args.name as string}*`;
-    case 'delete_task':
-      return `*delete_task: ${args.name as string}*`;
-    case 'complete_task':
-      return `*complete_task: ${args.name as string}*`;
-    default:
-      return `*${item.name}*`;
-  }
-}
+    return `*store_knowledge: ${knowledge}${category != null ? ` (${category})` : ''}${tags ? ` [${tags.join(', ')}]` : ''}*`;
+  },
+  search_knowledge: (args) => {
+    const query = args.query as string;
+    const category = args.category as string | undefined;
+    const tags = args.tags as string[] | undefined;
+
+    return `*search_knowledge: ${query}${category == null ? ` (${category})` : ''}${tags ? ` [${tags.join(', ')}]` : ''}*`;
+  },
+};
 
 export function formatInputItem(item: ResponseInputItem): string {
   const itemType = item.type;
@@ -274,6 +293,8 @@ export function formatMessage(
           return formatBlock(role, `<image>${c.image_url}</image>`);
         case 'input_file':
           return formatBlock(role, `<file>${c.file_url ?? c.filename}</file>`);
+        case 'input_audio':
+          return formatBlock(role, `<audio type="${c.input_audio.format}" />`);
         case 'refusal':
           return formatBlock(role, `<refusal>${c.refusal}</refusal>`);
         default:

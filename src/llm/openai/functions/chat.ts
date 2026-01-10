@@ -3,7 +3,7 @@ import { z } from 'zod';
 import {
   addReactionToMessage,
   getChannelMessages,
-  getUnreadMessageCount,
+  getNotificationDetails,
   sendChannelMessage,
 } from '../../../discord';
 import { formatDatetime } from '../../../utils/datetime';
@@ -13,7 +13,7 @@ import { Tool } from '.';
 
 export const checkNotificationsFunction = new Tool(
   'check_notifications',
-  'Check for new notifications in the chat channel. Returns the unread message count.',
+  'Check for new notifications in the chat channel. Returns the unread message count and a preview of the latest message.',
   {},
   async (_, ctx) => {
     try {
@@ -28,7 +28,7 @@ export const checkNotificationsFunction = new Tool(
         };
       }
 
-      const unreadCount = await getUnreadMessageCount(
+      const notificationDetails = await getNotificationDetails(
         ctx.discordBotToken,
         channelId
       );
@@ -37,7 +37,11 @@ export const checkNotificationsFunction = new Tool(
         success: true,
         notifications: {
           channel: 'chat',
-          unreadCount: unreadCount > 99 ? '99+' : unreadCount,
+          unreadCount:
+            notificationDetails.unreadCount > 99
+              ? '99+'
+              : notificationDetails.unreadCount,
+          latestMessagePreview: notificationDetails.latestMessagePreview,
         },
       };
     } catch (error) {

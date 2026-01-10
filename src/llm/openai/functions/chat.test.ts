@@ -5,7 +5,7 @@ import { mockToolContext } from '../../../../test/mocks/tool';
 import {
   addReactionToMessage,
   getChannelMessages,
-  getUnreadMessageCount,
+  getNotificationDetails,
   sendChannelMessage,
 } from '../../../discord';
 
@@ -26,6 +26,7 @@ vi.mock('../../../discord', async (importOriginal) => {
   return {
     ...actual,
     getUnreadMessageCount: vi.fn(),
+    getNotificationDetails: vi.fn(),
   };
 });
 
@@ -49,9 +50,19 @@ describe('checkNotificationsFunction', () => {
       vi.restoreAllMocks();
     });
 
-    it('0件', async () => {
-      const unreadCount = 0;
-      vi.mocked(getUnreadMessageCount).mockResolvedValue(unreadCount);
+    it('0件（最新メッセージをプレビュー表示）', async () => {
+      const mockNotificationDetails = {
+        unreadCount: 0,
+        latestMessagePreview: {
+          messageId: 'message-latest',
+          user: 'user1',
+          message: 'Latest message (already read)',
+          created_at: '2025/01/23 13:56:07',
+        },
+      };
+      vi.mocked(getNotificationDetails).mockResolvedValue(
+        mockNotificationDetails
+      );
       const result = await checkNotificationsFunction.handler(
         {},
         mockToolContext
@@ -60,15 +71,31 @@ describe('checkNotificationsFunction', () => {
         success: true,
         notifications: {
           channel: 'chat',
-          unreadCount,
+          unreadCount: 0,
+          latestMessagePreview: {
+            messageId: 'message-latest',
+            user: 'user1',
+            message: 'Latest message (already read)',
+            created_at: '2025/01/23 13:56:07',
+          },
         },
       };
       expect(result).toEqual(expected);
     });
 
     it('1件', async () => {
-      const unreadCount = 1;
-      vi.mocked(getUnreadMessageCount).mockResolvedValue(unreadCount);
+      const mockNotificationDetails = {
+        unreadCount: 1,
+        latestMessagePreview: {
+          messageId: 'message-1',
+          user: 'testuser',
+          message: 'Test message',
+          created_at: '2025/01/23 13:56:07',
+        },
+      };
+      vi.mocked(getNotificationDetails).mockResolvedValue(
+        mockNotificationDetails
+      );
       const result = await checkNotificationsFunction.handler(
         {},
         mockToolContext
@@ -77,15 +104,31 @@ describe('checkNotificationsFunction', () => {
         success: true,
         notifications: {
           channel: 'chat',
-          unreadCount,
+          unreadCount: 1,
+          latestMessagePreview: {
+            messageId: 'message-1',
+            user: 'testuser',
+            message: 'Test message',
+            created_at: '2025/01/23 13:56:07',
+          },
         },
       };
       expect(result).toEqual(expected);
     });
 
     it('10件', async () => {
-      const unreadCount = 10;
-      vi.mocked(getUnreadMessageCount).mockResolvedValue(unreadCount);
+      const mockNotificationDetails = {
+        unreadCount: 10,
+        latestMessagePreview: {
+          messageId: 'message-10',
+          user: 'testuser',
+          message: 'Test message',
+          created_at: '2025/01/23 13:56:07',
+        },
+      };
+      vi.mocked(getNotificationDetails).mockResolvedValue(
+        mockNotificationDetails
+      );
       const result = await checkNotificationsFunction.handler(
         {},
         mockToolContext
@@ -94,15 +137,31 @@ describe('checkNotificationsFunction', () => {
         success: true,
         notifications: {
           channel: 'chat',
-          unreadCount,
+          unreadCount: 10,
+          latestMessagePreview: {
+            messageId: 'message-10',
+            user: 'testuser',
+            message: 'Test message',
+            created_at: '2025/01/23 13:56:07',
+          },
         },
       };
       expect(result).toEqual(expected);
     });
 
     it('99件', async () => {
-      const unreadCount = 99;
-      vi.mocked(getUnreadMessageCount).mockResolvedValue(unreadCount);
+      const mockNotificationDetails = {
+        unreadCount: 99,
+        latestMessagePreview: {
+          messageId: 'message-99',
+          user: 'testuser',
+          message: 'Test message',
+          created_at: '2025/01/23 13:56:07',
+        },
+      };
+      vi.mocked(getNotificationDetails).mockResolvedValue(
+        mockNotificationDetails
+      );
       const result = await checkNotificationsFunction.handler(
         {},
         mockToolContext
@@ -111,15 +170,31 @@ describe('checkNotificationsFunction', () => {
         success: true,
         notifications: {
           channel: 'chat',
-          unreadCount,
+          unreadCount: 99,
+          latestMessagePreview: {
+            messageId: 'message-99',
+            user: 'testuser',
+            message: 'Test message',
+            created_at: '2025/01/23 13:56:07',
+          },
         },
       };
       expect(result).toEqual(expected);
     });
 
     it('100件 (99+)', async () => {
-      const unreadCount = 100;
-      vi.mocked(getUnreadMessageCount).mockResolvedValue(unreadCount);
+      const mockNotificationDetails = {
+        unreadCount: 100,
+        latestMessagePreview: {
+          messageId: 'message-100',
+          user: 'testuser',
+          message: 'Test message',
+          created_at: '2025/01/23 13:56:07',
+        },
+      };
+      vi.mocked(getNotificationDetails).mockResolvedValue(
+        mockNotificationDetails
+      );
       const result = await checkNotificationsFunction.handler(
         {},
         mockToolContext
@@ -129,14 +204,30 @@ describe('checkNotificationsFunction', () => {
         notifications: {
           channel: 'chat',
           unreadCount: '99+',
+          latestMessagePreview: {
+            messageId: 'message-100',
+            user: 'testuser',
+            message: 'Test message',
+            created_at: '2025/01/23 13:56:07',
+          },
         },
       };
       expect(result).toEqual(expected);
     });
 
     it('200件 (99+)', async () => {
-      const unreadCount = 200;
-      vi.mocked(getUnreadMessageCount).mockResolvedValue(unreadCount);
+      const mockNotificationDetails = {
+        unreadCount: 200,
+        latestMessagePreview: {
+          messageId: 'message-200',
+          user: 'testuser',
+          message: 'Test message',
+          created_at: '2025/01/23 13:56:07',
+        },
+      };
+      vi.mocked(getNotificationDetails).mockResolvedValue(
+        mockNotificationDetails
+      );
       const result = await checkNotificationsFunction.handler(
         {},
         mockToolContext
@@ -146,6 +237,12 @@ describe('checkNotificationsFunction', () => {
         notifications: {
           channel: 'chat',
           unreadCount: '99+',
+          latestMessagePreview: {
+            messageId: 'message-200',
+            user: 'testuser',
+            message: 'Test message',
+            created_at: '2025/01/23 13:56:07',
+          },
         },
       };
       expect(result).toEqual(expected);
@@ -161,9 +258,32 @@ describe('checkNotificationsFunction', () => {
       expect(result.error).toBe(CHAT_UNAVAILABLE_ERROR);
     });
 
-    it('getUnreadMessageCount エラー', async () => {
+    it('空のチャンネル（メッセージ0件）', async () => {
+      const mockNotificationDetails = {
+        unreadCount: 0,
+        latestMessagePreview: null,
+      };
+      vi.mocked(getNotificationDetails).mockResolvedValue(
+        mockNotificationDetails
+      );
+      const result = await checkNotificationsFunction.handler(
+        {},
+        mockToolContext
+      );
+      const expected = {
+        success: true,
+        notifications: {
+          channel: 'chat',
+          unreadCount: 0,
+          latestMessagePreview: null,
+        },
+      };
+      expect(result).toEqual(expected);
+    });
+
+    it('getNotificationDetails エラー', async () => {
       const error = new Error(CHAT_API_ERROR);
-      vi.mocked(getUnreadMessageCount).mockRejectedValue(error);
+      vi.mocked(getNotificationDetails).mockRejectedValue(error);
       const result = await checkNotificationsFunction.handler(
         {},
         mockToolContext

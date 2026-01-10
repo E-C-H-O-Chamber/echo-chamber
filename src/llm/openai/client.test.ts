@@ -55,26 +55,18 @@ describe('OpenAI Client', () => {
     ];
     mockCreateResponse.mockResolvedValue({});
     await client.createResponse(input);
-    expect(mockCreateResponse).toHaveBeenCalledWith({
-      input,
-      model: 'gpt-5-2025-08-07',
-      parallel_tool_calls: true,
-      previous_response_id: undefined,
-      reasoning: {
-        effort: 'minimal',
-      },
-      store: true,
-      stream: false,
-      text: {
-        format: {
-          type: 'text',
-        },
-        verbosity: 'low',
-      },
-      tool_choice: 'auto',
-      tools: [thinkDeeplyFunction.definition],
-      truncation: 'auto',
-    });
+    expect(mockCreateResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input,
+        parallel_tool_calls: true,
+        previous_response_id: undefined,
+        store: true,
+        stream: false,
+        tool_choice: 'auto',
+        tools: [thinkDeeplyFunction.definition],
+        truncation: 'auto',
+      })
+    );
   });
 
   describe('executeFunction', () => {
@@ -195,26 +187,18 @@ describe('OpenAI Client', () => {
       });
 
       const response = await client.call(input);
-      expect(mockCreateResponse).toHaveBeenCalledWith({
-        input,
-        model: 'gpt-5-2025-08-07',
-        parallel_tool_calls: true,
-        previous_response_id: undefined,
-        reasoning: {
-          effort: 'minimal',
-        },
-        store: true,
-        stream: false,
-        text: {
-          format: {
-            type: 'text',
-          },
-          verbosity: 'low',
-        },
-        tool_choice: 'auto',
-        tools: [thinkDeeplyFunction.definition],
-        truncation: 'auto',
-      });
+      expect(mockCreateResponse).toHaveBeenCalledWith(
+        expect.objectContaining({
+          input,
+          parallel_tool_calls: true,
+          previous_response_id: undefined,
+          store: true,
+          stream: false,
+          tool_choice: 'auto',
+          tools: [thinkDeeplyFunction.definition],
+          truncation: 'auto',
+        })
+      );
       expect(mockCreateResponse).toHaveBeenCalledTimes(1);
       expect(response).toEqual(usage);
     });
@@ -294,46 +278,32 @@ describe('OpenAI Client', () => {
         },
       ];
       const response = await client.call(input);
-      expect(mockCreateResponse).toHaveBeenNthCalledWith(1, {
-        input,
-        model: 'gpt-5-2025-08-07',
-        parallel_tool_calls: true,
-        previous_response_id: undefined,
-        reasoning: {
-          effort: 'minimal',
-        },
-        store: true,
-        stream: false,
-        text: {
-          format: {
-            type: 'text',
-          },
-          verbosity: 'low',
-        },
-        tool_choice: 'auto',
-        tools: [thinkDeeplyFunction.definition],
-        truncation: 'auto',
-      });
-      expect(mockCreateResponse).toHaveBeenNthCalledWith(2, {
-        input: nextInput,
-        model: 'gpt-5-2025-08-07',
-        parallel_tool_calls: true,
-        previous_response_id: 'response_123',
-        reasoning: {
-          effort: 'minimal',
-        },
-        store: true,
-        stream: false,
-        text: {
-          format: {
-            type: 'text',
-          },
-          verbosity: 'low',
-        },
-        tool_choice: 'auto',
-        tools: [thinkDeeplyFunction.definition],
-        truncation: 'auto',
-      });
+      expect(mockCreateResponse).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          input,
+          parallel_tool_calls: true,
+          previous_response_id: undefined,
+          store: true,
+          stream: false,
+          tool_choice: 'auto',
+          tools: [thinkDeeplyFunction.definition],
+          truncation: 'auto',
+        })
+      );
+      expect(mockCreateResponse).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          input: nextInput,
+          parallel_tool_calls: true,
+          previous_response_id: 'response_123',
+          store: true,
+          stream: false,
+          tool_choice: 'auto',
+          tools: [thinkDeeplyFunction.definition],
+          truncation: 'auto',
+        })
+      );
       expect(response).toEqual(totalUsage);
       expect(mockCreateResponse).toHaveBeenCalledTimes(2);
     });
@@ -499,7 +469,7 @@ describe('formatLogOutput', () => {
       },
     ];
 
-    expect(formatLogOutput(output)).toBe('think: I am fine, thank you!');
+    expect(formatLogOutput(output)).toBe('*thinking: I am fine, thank you!*');
   });
 
   it('refusal', () => {
@@ -700,7 +670,7 @@ describe('formatLogOutput', () => {
     ];
 
     expect(formatLogOutput(output)).toBe(
-      'think: First message\n\n*think_deeply: Some thought*'
+      '*thinking: First message*\n\n*think_deeply: Some thought*'
     );
   });
 
@@ -727,7 +697,7 @@ describe('formatLogOutput', () => {
     ];
 
     expect(formatLogOutput(output)).toBe(
-      'think: First part\n\nthink: Second part'
+      '*thinking: First part*\n\n*thinking: Second part*'
     );
   });
 

@@ -21,8 +21,8 @@ importers:
         specifier: ^4.7.11
         version: 4.9.2
       openai:
-        specifier: ^5.12.2
-        version: 5.12.2(ws@8.18.0)(zod@4.0.17)
+        specifier: ^5.23.2
+        version: 5.23.2(ws@8.18.0)(zod@4.0.17)
       zod:
         specifier: ^4.0.5
         version: 4.0.17
@@ -1867,8 +1867,8 @@ packages:
   ohash@2.0.11:
     resolution: {integrity: sha512-RdR9FQrFwNBNXAr4GixM8YaRZRJ5PUWbKYbE5eOsrwAjJW0q2REGcf79oYPsLyskQCZG1PLN+S/K1V00joZAoQ==}
 
-  openai@5.12.2:
-    resolution: {integrity: sha512-xqzHHQch5Tws5PcKR2xsZGX9xtch+JQFz5zb14dGqlshmmDAFBFEWmeIpf7wVqWV+w7Emj7jRgkNJakyKE0tYQ==}
+  openai@5.23.2:
+    resolution: {integrity: sha512-MQBzmTulj+MM5O8SKEk/gL8a7s5mktS9zUtAkU257WjvobGc9nKcBuVwjyEEcb9SI8a8Y2G/mzn3vm9n1Jlleg==}
     hasBin: true
     peerDependencies:
       ws: ^8.18.0
@@ -4217,7 +4217,7 @@ snapshots:
 
   ohash@2.0.11: {}
 
-  openai@5.12.2(ws@8.18.0)(zod@4.0.17):
+  openai@5.23.2(ws@8.18.0)(zod@4.0.17):
     optionalDependencies:
       ws: 8.18.0
       zod: 4.0.17
