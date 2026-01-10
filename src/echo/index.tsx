@@ -138,8 +138,22 @@ export class Echo extends DurableObject<Env> {
     await this.logger.debug(
       `Alarm triggered with info: ${JSON.stringify(alarmInfo)}`
     );
-    await this.setNextAlarm();
+    const now = new Date();
+    if (now.getHours() === 18) {
+      await this.sleep();
+      const nextAlarm = new Date();
+      nextAlarm.setHours(22, 0, 0, 0);
+      await this.setNextAlarm(nextAlarm);
+      console.info(
+        `Echo is going to sleep and will wake at ${formatDatetime(nextAlarm)}.`
+      );
+      return;
+    }
+    if (now.getHours() === 22) {
+      await this.wake(await this.getId(), true);
+    }
     await this.run();
+    await this.setNextAlarm();
   }
 
   async getNextAlarm(): Promise<string | null> {
@@ -150,13 +164,15 @@ export class Echo extends DurableObject<Env> {
     return formatDatetime(new Date(nextAlarm));
   }
 
-  async setNextAlarm(): Promise<void> {
-    const nextAlarm = new Date();
-    nextAlarm.setMinutes(
-      nextAlarm.getMinutes() + ALARM_CONFIG.INTERVAL_MINUTES
-    );
-    nextAlarm.setSeconds(0);
-    nextAlarm.setMilliseconds(0);
+  async setNextAlarm(nextAlarm?: Date): Promise<void> {
+    if (!nextAlarm) {
+      nextAlarm = new Date();
+      nextAlarm.setMinutes(
+        nextAlarm.getMinutes() + ALARM_CONFIG.INTERVAL_MINUTES,
+        0,
+        0
+      );
+    }
     await this.storage.setAlarm(nextAlarm);
     await this.logger.debug(`Next alarm set for ${nextAlarm.toISOString()}`);
   }
@@ -192,7 +208,13 @@ export class Echo extends DurableObject<Env> {
 
   async getKnowledges(): Promise<Knowledge[]> {
     const knowledges = await this.storage.get<Knowledge[]>('knowledge');
-    return knowledges ?? [];
+    if (!knowledges) return [];
+    // lastAccessedAtの降順でソート
+    return knowledges.sort(
+      (a, b) =>
+        new Date(b.lastAccessedAt).getTime() -
+        new Date(a.lastAccessedAt).getTime()
+    );
   }
 
   /**
@@ -253,7 +275,7 @@ export class Echo extends DurableObject<Env> {
       );
     } finally {
       // await this.setNextAlarm();
-      await this.setState('Idling');
+      // await this.setState('Idling');
     }
   }
 

@@ -10,12 +10,16 @@ import {
   recallContextFunction,
 } from '../../llm/openai/functions/context';
 import {
-  createTaskFunction,
-  listTaskFunction,
-  updateTaskFunction,
-  deleteTaskFunction,
-  completeTaskFunction,
-} from '../../llm/openai/functions/task';
+  storeKnowledgeFunction,
+  searchKnowledgeFunction,
+} from '../../llm/openai/functions/knowledge';
+// import {
+//   createTaskFunction,
+//   listTaskFunction,
+//   updateTaskFunction,
+//   deleteTaskFunction,
+//   completeTaskFunction,
+// } from '../../llm/openai/functions/task';
 import { thinkDeeplyFunction } from '../../llm/openai/functions/think';
 import { getCurrentTimeFunction } from '../../llm/openai/functions/time';
 import { echoSystemMessage } from '../../llm/prompts/system';
@@ -72,11 +76,13 @@ export class ThinkingEngine {
         addReactionToChatMessageFunction,
         storeContextFunction,
         recallContextFunction,
-        listTaskFunction,
-        createTaskFunction,
-        updateTaskFunction,
-        completeTaskFunction,
-        deleteTaskFunction,
+        storeKnowledgeFunction,
+        searchKnowledgeFunction,
+        // listTaskFunction,
+        // createTaskFunction,
+        // updateTaskFunction,
+        // completeTaskFunction,
+        // deleteTaskFunction,
         thinkDeeplyFunction,
       ],
       this.toolContext
@@ -84,21 +90,21 @@ export class ThinkingEngine {
   }
 
   private async buildInitialMessages(): Promise<ResponseInput> {
-    const result = await listTaskFunction.handler({}, this.toolContext);
-    const hasTasks =
-      'tasks' in result &&
-      Array.isArray(result.tasks) &&
-      result.tasks.length > 0;
-    const taskMessage = hasTasks
-      ? [
-          this.createFunctionCallMessage(listTaskFunction),
-          {
-            type: 'function_call_output' as const,
-            call_id: listTaskFunction.name,
-            output: JSON.stringify(result),
-          },
-        ]
-      : [];
+    // const result = await listTaskFunction.handler({}, this.toolContext);
+    // const hasTasks =
+    //   'tasks' in result &&
+    //   Array.isArray(result.tasks) &&
+    //   result.tasks.length > 0;
+    // const taskMessage = hasTasks
+    //   ? [
+    //       this.createFunctionCallMessage(listTaskFunction),
+    //       {
+    //         type: 'function_call_output' as const,
+    //         call_id: listTaskFunction.name,
+    //         output: JSON.stringify(result),
+    //       },
+    //     ]
+    //   : [];
 
     return [
       {
@@ -111,7 +117,7 @@ export class ThinkingEngine {
       await this.createFunctionCallOutputMessage(getCurrentTimeFunction),
       this.createFunctionCallMessage(checkNotificationsFunction),
       await this.createFunctionCallOutputMessage(checkNotificationsFunction),
-      ...taskMessage,
+      // ...taskMessage,
     ];
   }
 
