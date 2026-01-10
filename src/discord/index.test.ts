@@ -8,6 +8,7 @@ import {
 import {
   getChannelMessages,
   getCurrentUser,
+  getNotificationDetails,
   getUnreadMessageCount,
 } from './index';
 
@@ -195,5 +196,121 @@ describe('getUnreadMessageCount', () => {
     vi.mocked(getChannelMessages).mockResolvedValue(mockMessages);
     const result = await getUnreadMessageCount(TOKEN, CHANNEL_ID);
     expect(result).toBe(0);
+  });
+});
+
+describe('getNotificationDetails', () => {
+  it('基本ケース：未読メッセージありで未読数と最新プレビューを返す', async () => {
+    const mockUser = createDiscordCurrentUserResponse(BOT_USER_ID);
+    vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+    const messages = [
+      {
+        message: '最新メッセージ',
+        user: 'user-1',
+        timestamp: '2025-01-23T04:56:07.089Z',
+      },
+      {
+        message: '2番目のメッセージ',
+        user: 'user-2',
+        timestamp: '2025-01-23T04:55:00.000Z',
+      },
+    ];
+    const mockMessages = createDiscordMessagesResponse(messages);
+    vi.mocked(getChannelMessages).mockResolvedValue(mockMessages);
+
+    const result = await getNotificationDetails(TOKEN, CHANNEL_ID);
+
+    expect(result).toEqual({
+      unreadCount: 2,
+      latestMessagePreview: {
+        messageId: 'message-1',
+        user: 'user-1',
+        message: '最新メッセージ',
+        created_at: '2025/01/23 13:56:07',
+      },
+    });
+  });
+
+  it('未読0件だが最新メッセージあり：最新メッセージをプレビュー表示', async () => {
+    const mockUser = createDiscordCurrentUserResponse(BOT_USER_ID);
+    vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+    const messages = [
+      {
+        message: '最新メッセージ（既読）',
+        user: BOT_USER_ID,
+        userId: BOT_USER_ID,
+        timestamp: '2025-01-23T04:56:07.089Z',
+      },
+      {
+        message: '過去のメッセージ',
+        user: 'user-1',
+        timestamp: '2025-01-23T04:55:00.000Z',
+      },
+    ];
+    const mockMessages = createDiscordMessagesResponse(messages);
+    vi.mocked(getChannelMessages).mockResolvedValue(mockMessages);
+
+    const result = await getNotificationDetails(TOKEN, CHANNEL_ID);
+
+    expect(result).toEqual({
+      unreadCount: 0,
+      latestMessagePreview: {
+        messageId: 'message-1',
+        user: BOT_USER_ID,
+        message: '最新メッセージ（既読）',
+        created_at: '2025/01/23 13:56:07',
+      },
+    });
+  });
+
+  it('空のチャンネル：未読数0でプレビューはnull', async () => {
+    const mockUser = createDiscordCurrentUserResponse(BOT_USER_ID);
+    vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+    const mockMessages = createDiscordMessagesResponse([]);
+    vi.mocked(getChannelMessages).mockResolvedValue(mockMessages);
+
+    const result = await getNotificationDetails(TOKEN, CHANNEL_ID);
+
+    expect(result).toEqual({
+      unreadCount: 0,
+      latestMessagePreview: null,
+    });
+  });
+
+  it('リアクション付きメッセージ：既読として扱われ未読数は正しい', async () => {
+    const mockUser = createDiscordCurrentUserResponse(BOT_USER_ID);
+    vi.mocked(getCurrentUser).mockResolvedValue(mockUser);
+    const messages = [
+      {
+        message: '最新メッセージ',
+        user: 'user-1',
+        timestamp: '2025-01-23T04:56:07.089Z',
+      },
+      {
+        message: '既読メッセージ',
+        user: 'user-2',
+        timestamp: '2025-01-23T04:55:00.000Z',
+        reactions: [{ emoji: '👍', me: true }],
+      },
+      {
+        message: '過去のメッセージ',
+        user: 'user-3',
+        timestamp: '2025-01-23T04:54:00.000Z',
+      },
+    ];
+    const mockMessages = createDiscordMessagesResponse(messages);
+    vi.mocked(getChannelMessages).mockResolvedValue(mockMessages);
+
+    const result = await getNotificationDetails(TOKEN, CHANNEL_ID);
+
+    expect(result).toEqual({
+      unreadCount: 1,
+      latestMessagePreview: {
+        messageId: 'message-1',
+        user: 'user-1',
+        message: '最新メッセージ',
+        created_at: '2025/01/23 13:56:07',
+      },
+    });
   });
 });
