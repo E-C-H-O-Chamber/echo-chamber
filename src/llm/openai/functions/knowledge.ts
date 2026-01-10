@@ -35,14 +35,8 @@ export const storeKnowledgeFunction = new Tool(
       .describe(
         'Classification of the knowledge type to aid future searching and organization. Choose the most appropriate: "fact" (objective information, specifications, data), "experience" (specific events, lessons from situations), "insight" (analysis, conclusions, understanding gained), "pattern" (recurring themes, observed trends), "other" (general knowledge). Defaults to "other" if not specified.'
       ),
-    tags: z
-      .array(z.string().min(1).max(50).trim().toLowerCase())
-      .optional()
-      .describe(
-        'Optional keywords to enhance future searchability and organization. Use relevant, specific terms that describe the content, technology, domain, or context.'
-      ),
   },
-  async ({ knowledge, category = 'other', tags = [] }, ctx) => {
+  async ({ knowledge, category = 'other' }, ctx) => {
     try {
       const existingKnowledge =
         (await ctx.storage.get<Knowledge[]>('knowledge')) ?? [];
@@ -73,7 +67,7 @@ export const storeKnowledgeFunction = new Tool(
       const newKnowledge: Knowledge = {
         content: knowledge,
         category,
-        tags,
+        tags: [],
         accessCount: 0,
         lastAccessedAt: new Date().toISOString(),
       };
@@ -113,14 +107,8 @@ export const searchKnowledgeFunction = new Tool(
       .describe(
         'Optional filter by knowledge type. Available categories: "fact" (objective information), "experience" (past events/lessons), "insight" (conclusions/understanding), "pattern" (recurring themes), "other" (general knowledge). Use to narrow results to specific types of information.'
       ),
-    tags: z
-      .array(z.string().min(1).max(50).trim().toLowerCase())
-      .optional()
-      .describe(
-        'Optional array of tags to filter results. Only knowledge containing ALL specified tags will be returned (AND condition). Use to find knowledge with specific topic combinations.'
-      ),
   },
-  async ({ query, category, tags = [] }, ctx) => {
+  async ({ query, category }, ctx) => {
     try {
       const existingKnowledge = await ctx.storage.get<Knowledge[]>('knowledge');
 
@@ -143,13 +131,10 @@ export const searchKnowledgeFunction = new Tool(
         // カテゴリフィルタ
         const matchesCategory = !category || k.category === category;
 
-        // タグフィルタ（AND条件）
-        const matchesTags = tags.every((tag) => k.tags.includes(tag));
-
         return {
           ...k,
           matchCount,
-          matchesFilters: matchCount > 0 && matchesCategory && matchesTags,
+          matchesFilters: matchCount > 0 && matchesCategory,
         };
       });
 

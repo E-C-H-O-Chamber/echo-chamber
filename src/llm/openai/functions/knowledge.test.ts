@@ -70,14 +70,6 @@ describe('Knowledge Functions', () => {
       });
       expect(parameters.category.def.type).toBe('optional');
       expect(parameters.category.description).toBeDefined();
-
-      expect(parameters).toHaveProperty('tags');
-      expect(parameters.tags.unwrap().def.type).toBe('array');
-      expect(parameters.tags.unwrap().def.element.def.type).toBe('string');
-      expect(parameters.tags.unwrap().def.element.minLength).toBe(1);
-      expect(parameters.tags.unwrap().def.element.maxLength).toBe(50);
-      expect(parameters.tags.def.type).toBe('optional');
-      expect(parameters.tags.description).toBeDefined();
     });
 
     describe('handler', () => {
@@ -85,7 +77,6 @@ describe('Knowledge Functions', () => {
         const args = {
           knowledge: 'Important fact about AI',
           category: 'fact' as const,
-          tags: ['technology'],
         };
 
         const result = await storeKnowledgeFunction.handler(
@@ -100,7 +91,7 @@ describe('Knowledge Functions', () => {
             {
               content: 'Important fact about AI',
               category: 'fact',
-              tags: ['technology'],
+              tags: [],
               accessCount: 0,
               lastAccessedAt: new Date().toISOString(),
             },
@@ -171,7 +162,6 @@ describe('Knowledge Functions', () => {
         const args = {
           knowledge: 'New knowledge that triggers LRU deletion',
           category: 'other' as const,
-          tags: ['new'],
         };
 
         const result = await storeKnowledgeFunction.handler(
@@ -193,7 +183,7 @@ describe('Knowledge Functions', () => {
             expect.objectContaining({
               content: 'New knowledge that triggers LRU deletion',
               category: 'other',
-              tags: ['new'],
+              tags: [],
             }),
           ])
         );
@@ -212,7 +202,6 @@ describe('Knowledge Functions', () => {
         const args = {
           knowledge: 'New knowledge that triggers LRU deletion',
           category: 'other' as const,
-          tags: ['new'],
         };
 
         const result = await storeKnowledgeFunction.handler(
@@ -234,7 +223,7 @@ describe('Knowledge Functions', () => {
             expect.objectContaining({
               content: 'New knowledge that triggers LRU deletion',
               category: 'other',
-              tags: ['new'],
+              tags: [],
             }),
           ])
         );
@@ -316,14 +305,6 @@ describe('Knowledge Functions', () => {
       });
       expect(parameters.category.def.type).toBe('optional');
       expect(parameters.category.description).toBeDefined();
-
-      expect(parameters).toHaveProperty('tags');
-      expect(parameters.tags.unwrap().def.type).toBe('array');
-      expect(parameters.tags.unwrap().def.element.def.type).toBe('string');
-      expect(parameters.tags.unwrap().def.element.minLength).toBe(1);
-      expect(parameters.tags.unwrap().def.element.maxLength).toBe(50);
-      expect(parameters.tags.def.type).toBe('optional');
-      expect(parameters.tags.description).toBeDefined();
     });
 
     describe('handler', () => {
@@ -651,128 +632,6 @@ describe('Knowledge Functions', () => {
               content: 'I had a great experience at the new restaurant',
               category: 'experience',
               tags: ['food'],
-            },
-          ],
-        });
-      });
-
-      it('タグでフィルタリングして知識を検索する', async () => {
-        const existingKnowledge = [
-          createMockKnowledge({
-            content: 'AI is transforming the world',
-            tags: ['technology', 'ai'],
-          }),
-          createMockKnowledge({
-            content: 'The sky is blue due to Rayleigh scattering',
-            tags: ['science', 'ai'],
-          }),
-          createMockKnowledge({
-            content: 'I had a great experience at the new restaurant',
-            category: 'experience',
-            tags: ['food', 'ai'],
-          }),
-        ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
-
-        const args = {
-          query: 'is',
-          tags: ['science'],
-        };
-
-        const result = await searchKnowledgeFunction.handler(
-          args,
-          mockToolContext
-        );
-
-        expect(result).toEqual({
-          success: true,
-          results: [
-            {
-              content: 'The sky is blue due to Rayleigh scattering',
-              category: 'other',
-              tags: ['science', 'ai'],
-            },
-          ],
-        });
-      });
-
-      it('複数タグでのフィルタリングはAND条件でマッチする', async () => {
-        const existingKnowledge = [
-          createMockKnowledge({
-            content: 'AI is transforming the world',
-            tags: ['ai'],
-          }),
-          createMockKnowledge({
-            content: 'Advancements in AI and technology',
-            tags: ['technology', 'ai'],
-          }),
-          createMockKnowledge({
-            content: 'The sky is blue due to Rayleigh scattering',
-            tags: ['science', 'technology'],
-          }),
-        ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
-
-        const args = {
-          query: 'ai',
-          tags: ['technology', 'ai'],
-        };
-
-        const result = await searchKnowledgeFunction.handler(
-          args,
-          mockToolContext
-        );
-
-        expect(result).toEqual({
-          success: true,
-          results: [
-            {
-              content: 'Advancements in AI and technology',
-              category: 'other',
-              tags: ['technology', 'ai'],
-            },
-          ],
-        });
-      });
-
-      it('タグとカテゴリの両方でフィルタリングして知識を検索する', async () => {
-        const existingKnowledge = [
-          createMockKnowledge({
-            content: 'AI is transforming the world',
-            category: 'fact',
-            tags: ['technology'],
-          }),
-          createMockKnowledge({
-            content: 'The sky is blue due to Rayleigh scattering',
-            category: 'fact',
-            tags: ['science'],
-          }),
-          createMockKnowledge({
-            content: 'I had a great experience at the new restaurant',
-            category: 'experience',
-            tags: ['food', 'science'],
-          }),
-        ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
-
-        const args = {
-          query: 'the',
-          category: 'fact' as const,
-          tags: ['science'],
-        };
-
-        const result = await searchKnowledgeFunction.handler(
-          args,
-          mockToolContext
-        );
-
-        expect(result).toEqual({
-          success: true,
-          results: [
-            {
-              content: 'The sky is blue due to Rayleigh scattering',
-              category: 'fact',
-              tags: ['science'],
             },
           ],
         });
