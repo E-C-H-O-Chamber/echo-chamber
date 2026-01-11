@@ -23,6 +23,8 @@ export type KnowledgeCategory =
   | 'experience'
   | 'insight'
   | 'pattern'
+  | 'rule'
+  | 'preference'
   | 'other';
 
 export interface Knowledge {

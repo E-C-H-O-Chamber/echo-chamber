@@ -15,6 +15,8 @@ const knowledgeCategorySchema = z.enum([
   'experience',
   'insight',
   'pattern',
+  'rule',
+  'preference',
   'other',
 ]);
 
@@ -33,7 +35,7 @@ export const storeKnowledgeFunction = new Tool(
     category: knowledgeCategorySchema
       .optional()
       .describe(
-        'Classification of the knowledge type to aid future searching and organization. Choose the most appropriate: "fact" (objective information, specifications, data), "experience" (specific events, lessons from situations), "insight" (analysis, conclusions, understanding gained), "pattern" (recurring themes, observed trends), "other" (general knowledge). Defaults to "other" if not specified.'
+        'Classification of the knowledge type to aid future searching and organization. Choose the most appropriate: "fact" (objective information, specifications, data), "experience" (specific events, lessons from situations), "insight" (analysis, conclusions, understanding gained), "pattern" (recurring themes, observed trends), "rule" (guidelines, constraints, policies to follow), "preference" (user preferences, likes/dislikes, personal choices), "other" (general knowledge). Defaults to "other" if not specified.'
       ),
   },
   async ({ knowledge, category = 'other' }, ctx) => {
@@ -105,7 +107,7 @@ export const searchKnowledgeFunction = new Tool(
     category: knowledgeCategorySchema
       .optional()
       .describe(
-        'Optional filter by knowledge type. Available categories: "fact" (objective information), "experience" (past events/lessons), "insight" (conclusions/understanding), "pattern" (recurring themes), "other" (general knowledge). Use to narrow results to specific types of information.'
+        'Optional filter by knowledge type. Available categories: "fact" (objective information), "experience" (past events/lessons), "insight" (conclusions/understanding), "pattern" (recurring themes), "rule" (guidelines/constraints), "preference" (user preferences), "other" (general knowledge). Use to narrow results to specific types of information.'
       ),
   },
   async ({ query, category }, ctx) => {
