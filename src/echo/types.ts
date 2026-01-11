@@ -33,4 +33,5 @@ export interface Knowledge {
   tags: string[];
   accessCount: number;
   lastAccessedAt: string;
+  forgottenAt: string;
 }

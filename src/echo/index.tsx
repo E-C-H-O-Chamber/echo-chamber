@@ -209,11 +209,10 @@ export class Echo extends DurableObject<Env> {
   async getKnowledges(): Promise<Knowledge[]> {
     const knowledges = await this.storage.get<Knowledge[]>('knowledge');
     if (!knowledges) return [];
-    // lastAccessedAtの降順でソート
+    // forgottenAtの降順でソート
     return knowledges.sort(
       (a, b) =>
-        new Date(b.lastAccessedAt).getTime() -
-        new Date(a.lastAccessedAt).getTime()
+        new Date(b.forgottenAt).getTime() - new Date(a.forgottenAt).getTime()
     );
   }
 

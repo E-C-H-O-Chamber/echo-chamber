@@ -9,6 +9,7 @@ import {
 } from 'vitest';
 
 import { mockToolContext } from '../../../../test/mocks/tool';
+import { calculateForgottenAt } from '../../../utils/memory';
 
 import { storeKnowledgeFunction, searchKnowledgeFunction } from './knowledge';
 
@@ -29,12 +30,16 @@ beforeEach(() => {
 
 // テスト用のヘルパー関数
 const createMockKnowledge = (overrides?: Partial<Knowledge>): Knowledge => {
+  const category = overrides?.category ?? ('other' as const);
+  const accessCount = overrides?.accessCount ?? 0;
+  const lastAccessedAt = overrides?.lastAccessedAt ?? new Date().toISOString();
   return {
     content: 'Test knowledge content',
-    category: 'other' as const,
+    category,
     tags: [],
-    accessCount: 0,
-    lastAccessedAt: new Date().toISOString(),
+    accessCount,
+    lastAccessedAt,
+    forgottenAt: calculateForgottenAt(lastAccessedAt, accessCount, category),
     ...overrides,
   };
 };
@@ -66,6 +71,8 @@ describe('Knowledge Functions', () => {
         experience: 'experience',
         insight: 'insight',
         pattern: 'pattern',
+        rule: 'rule',
+        preference: 'preference',
         other: 'other',
       });
       expect(parameters.category.def.type).toBe('optional');
@@ -73,7 +80,7 @@ describe('Knowledge Functions', () => {
     });
 
     describe('handler', () => {
-      it('正常な知識を保存する', async () => {
+      it('正常な知識を保存する（forgottenAt含む）', async () => {
         const args = {
           knowledge: 'Important fact about AI',
           category: 'fact' as const,
@@ -94,13 +101,14 @@ describe('Knowledge Functions', () => {
               tags: [],
               accessCount: 0,
               lastAccessedAt: new Date().toISOString(),
+              forgottenAt: '2025-08-05T08:00:00.000Z', // 1日後（2^0 * 1）
             },
           ])
         );
         expect(result).toEqual({ success: true });
       });
 
-      it('デフォルト値で知識を保存する', async () => {
+      it('デフォルト値で知識を保存する（forgottenAt含む）', async () => {
         const args = {
           knowledge: 'Simple knowledge without category or tags',
         };
@@ -119,7 +127,56 @@ describe('Knowledge Functions', () => {
               tags: [],
               accessCount: 0,
               lastAccessedAt: new Date().toISOString(),
+              forgottenAt: '2025-08-05T08:00:00.000Z', // 1日後（2^0 * 1）
             },
+          ])
+        );
+        expect(result).toEqual({ success: true });
+      });
+
+      it('ruleカテゴリーはforgottenAtが5倍長い', async () => {
+        const args = {
+          knowledge: 'Important rule to follow',
+          category: 'rule' as const,
+        };
+
+        const result = await storeKnowledgeFunction.handler(
+          args,
+          mockToolContext
+        );
+
+        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+          'knowledge',
+          expect.arrayContaining([
+            expect.objectContaining({
+              content: 'Important rule to follow',
+              category: 'rule',
+              forgottenAt: '2025-08-09T08:00:00.000Z', // 5日後（2^0 * 5）
+            }),
+          ])
+        );
+        expect(result).toEqual({ success: true });
+      });
+
+      it('preferenceカテゴリーはforgottenAtが2倍長い', async () => {
+        const args = {
+          knowledge: 'User prefers dark mode',
+          category: 'preference' as const,
+        };
+
+        const result = await storeKnowledgeFunction.handler(
+          args,
+          mockToolContext
+        );
+
+        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+          'knowledge',
+          expect.arrayContaining([
+            expect.objectContaining({
+              content: 'User prefers dark mode',
+              category: 'preference',
+              forgottenAt: '2025-08-06T08:00:00.000Z', // 2日後（2^0 * 2）
+            }),
           ])
         );
         expect(result).toEqual({ success: true });
@@ -150,17 +207,19 @@ describe('Knowledge Functions', () => {
         expect(mockToolContext.storage.put).not.toHaveBeenCalled();
       });
 
-      it('知識の最大数を超えた場合、LRUポリシーで古い知識を削除する（昇順ケース）', async () => {
+      it('知識の最大数を超えた場合、forgottenAtが最も早いものを削除する（昇順ケース）', async () => {
+        // forgottenAtが昇順になるように設定
+        // Knowledge 1のforgottenAtが最も早い（最初に忘却される）
         const existingKnowledge = Array.from({ length: 100 }, (_, i) =>
           createMockKnowledge({
             content: `Knowledge ${i + 1}`,
-            lastAccessedAt: new Date(2025, 0, i).toISOString(),
+            lastAccessedAt: new Date(2025, 0, i + 1).toISOString(),
           })
         );
         mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
-          knowledge: 'New knowledge that triggers LRU deletion',
+          knowledge: 'New knowledge that triggers deletion',
           category: 'other' as const,
         };
 
@@ -173,7 +232,7 @@ describe('Knowledge Functions', () => {
           'knowledge',
           expect.not.arrayContaining([
             expect.objectContaining({
-              content: 'Knowledge 1', // 最も古い知識が削除される
+              content: 'Knowledge 1', // forgottenAtが最も早いものが削除される
             }),
           ])
         );
@@ -181,7 +240,7 @@ describe('Knowledge Functions', () => {
           'knowledge',
           expect.arrayContaining([
             expect.objectContaining({
-              content: 'New knowledge that triggers LRU deletion',
+              content: 'New knowledge that triggers deletion',
               category: 'other',
               tags: [],
             }),
@@ -190,17 +249,19 @@ describe('Knowledge Functions', () => {
         expect(result).toEqual({ success: true });
       });
 
-      it('知識の最大数を超えた場合、LRUポリシーで古い知識を削除する（降順ケース）', async () => {
+      it('知識の最大数を超えた場合、forgottenAtが最も早いものを削除する（降順ケース）', async () => {
+        // forgottenAtが降順になるように設定
+        // Knowledge 100のforgottenAtが最も早い（最初に忘却される）
         const existingKnowledge = Array.from({ length: 100 }, (_, i) =>
           createMockKnowledge({
             content: `Knowledge ${i + 1}`,
-            lastAccessedAt: new Date(2025, 0, -i).toISOString(),
+            lastAccessedAt: new Date(2025, 0, 100 - i).toISOString(),
           })
         );
         mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
-          knowledge: 'New knowledge that triggers LRU deletion',
+          knowledge: 'New knowledge that triggers deletion',
           category: 'other' as const,
         };
 
@@ -213,7 +274,7 @@ describe('Knowledge Functions', () => {
           'knowledge',
           expect.not.arrayContaining([
             expect.objectContaining({
-              content: 'Knowledge 100', // 最も古い知識が削除される
+              content: 'Knowledge 100', // forgottenAtが最も早いものが削除される
             }),
           ])
         );
@@ -221,9 +282,52 @@ describe('Knowledge Functions', () => {
           'knowledge',
           expect.arrayContaining([
             expect.objectContaining({
-              content: 'New knowledge that triggers LRU deletion',
+              content: 'New knowledge that triggers deletion',
               category: 'other',
               tags: [],
+            }),
+          ])
+        );
+        expect(result).toEqual({ success: true });
+      });
+
+      it('カテゴリー補正によりruleカテゴリーは削除されにくい', async () => {
+        // 99個のotherカテゴリー（forgottenAt = lastAccessedAt + 1日）
+        // 1個のruleカテゴリー（forgottenAt = lastAccessedAt + 5日）
+        // ruleは同じlastAccessedAtでもforgottenAtが遅いので削除されにくい
+        const existingKnowledge = [
+          createMockKnowledge({
+            content: 'Rule knowledge',
+            category: 'rule',
+            lastAccessedAt: '2025-01-01T00:00:00.000Z',
+          }),
+          ...Array.from({ length: 99 }, (_, i) =>
+            createMockKnowledge({
+              content: `Other knowledge ${i + 1}`,
+              category: 'other',
+              lastAccessedAt: '2025-01-01T00:00:00.000Z',
+            })
+          ),
+        ];
+        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+
+        const args = {
+          knowledge: 'New knowledge',
+          category: 'other' as const,
+        };
+
+        const result = await storeKnowledgeFunction.handler(
+          args,
+          mockToolContext
+        );
+
+        // otherカテゴリーの知識が削除され、ruleは残る
+        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+          'knowledge',
+          expect.arrayContaining([
+            expect.objectContaining({
+              content: 'Rule knowledge',
+              category: 'rule',
             }),
           ])
         );
@@ -301,6 +405,8 @@ describe('Knowledge Functions', () => {
         experience: 'experience',
         insight: 'insight',
         pattern: 'pattern',
+        rule: 'rule',
+        preference: 'preference',
         other: 'other',
       });
       expect(parameters.category.def.type).toBe('optional');
@@ -688,7 +794,7 @@ describe('Knowledge Functions', () => {
         });
       });
 
-      it('ヒットした知識のaccessCountとlastAccessedAtが更新される', async () => {
+      it('ヒットした知識のaccessCount、lastAccessedAt、forgottenAtが更新される', async () => {
         const existingKnowledge = [
           createMockKnowledge({
             content: 'AI is transforming the world',
@@ -718,13 +824,49 @@ describe('Knowledge Functions', () => {
           ],
         });
 
+        // accessCount: 3 → 4
+        // lastAccessedAt: 2025-08-04T08:00:00.000Z（テスト時刻）
+        // forgottenAt: 2025-08-04 + 2^4日 * 1(other) = 2025-08-04 + 16日 = 2025-08-20
         expect(mockToolContext.storage.put).toHaveBeenCalledWith(
           'knowledge',
           expect.arrayContaining([
             expect.objectContaining({
               content: 'AI is transforming the world',
-              accessCount: 4, // accessCountがインクリメントされている
-              lastAccessedAt: new Date().toISOString(), // lastAccessedAtが更新されている
+              accessCount: 4,
+              lastAccessedAt: new Date().toISOString(),
+              forgottenAt: '2025-08-20T08:00:00.000Z',
+            }),
+          ])
+        );
+      });
+
+      it('検索ヒット時にカテゴリー補正が適用されたforgottenAtが計算される', async () => {
+        const existingKnowledge = [
+          createMockKnowledge({
+            content: 'Important rule to remember',
+            category: 'rule',
+            accessCount: 1,
+            lastAccessedAt: '2025-01-20T00:00:00.000Z',
+          }),
+        ];
+        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+
+        const args = {
+          query: 'rule',
+        };
+
+        await searchKnowledgeFunction.handler(args, mockToolContext);
+
+        // accessCount: 1 → 2
+        // forgottenAt: 2025-08-04 + 2^2日 * 5(rule) = 2025-08-04 + 20日 = 2025-08-24
+        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+          'knowledge',
+          expect.arrayContaining([
+            expect.objectContaining({
+              content: 'Important rule to remember',
+              category: 'rule',
+              accessCount: 2,
+              forgottenAt: '2025-08-24T08:00:00.000Z',
             }),
           ])
         );

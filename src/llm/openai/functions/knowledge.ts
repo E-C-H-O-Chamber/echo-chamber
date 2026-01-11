@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { getErrorMessage } from '../../../utils/error';
+import { calculateForgottenAt } from '../../../utils/memory';
 
 import { Tool } from './index';
 
@@ -51,10 +52,10 @@ export const storeKnowledgeFunction = new Tool(
         };
       }
 
-      // 記憶容量を超過する場合はLRUで削除
+      // 記憶容量を超過する場合はforgottenAtが最も早いものを削除
       if (existingKnowledge.length >= MAX_KNOWLEDGE_COUNT) {
         const lruKnowledge = existingKnowledge.reduce((acc, curr) => {
-          if (new Date(curr.lastAccessedAt) < new Date(acc.lastAccessedAt)) {
+          if (new Date(curr.forgottenAt) < new Date(acc.forgottenAt)) {
             return curr;
           }
           return acc;
@@ -62,16 +63,18 @@ export const storeKnowledgeFunction = new Tool(
 
         existingKnowledge.splice(existingKnowledge.indexOf(lruKnowledge), 1);
         await ctx.logger.info(
-          `Knowledge capacity reached. Removed LRU knowledge: ${lruKnowledge.content}`
+          `Knowledge capacity reached. Removed knowledge: ${lruKnowledge.content}`
         );
       }
 
+      const lastAccessedAt = new Date().toISOString();
       const newKnowledge: Knowledge = {
         content: knowledge,
         category,
         tags: [],
         accessCount: 0,
-        lastAccessedAt: new Date().toISOString(),
+        lastAccessedAt,
+        forgottenAt: calculateForgottenAt(lastAccessedAt, 0, category),
       };
       const updatedKnowledge = [...existingKnowledge, newKnowledge];
       await ctx.storage.put('knowledge', updatedKnowledge);
@@ -162,16 +165,22 @@ export const searchKnowledgeFunction = new Tool(
       // 最大5件まで制限
       const results = filteredKnowledge.slice(0, SEARCH_RESULT_LIMIT);
 
-      // ヒットした知識のaccessCountとlastAccessedAtを更新
+      // ヒットした知識のaccessCount、lastAccessedAt、forgottenAtを更新
       const lastAccessedAt = new Date().toISOString();
       if (results.length > 0) {
         const updatedKnowledge = existingKnowledge.map((k) => {
           const foundResult = results.find((r) => r.content === k.content);
           if (foundResult) {
+            const newAccessCount = k.accessCount + 1;
             return {
               ...k,
-              accessCount: k.accessCount + 1,
+              accessCount: newAccessCount,
               lastAccessedAt,
+              forgottenAt: calculateForgottenAt(
+                lastAccessedAt,
+                newAccessCount,
+                k.category
+              ),
             };
           }
           return k;
