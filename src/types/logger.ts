@@ -10,9 +10,18 @@ export interface LogEntry {
 }
 
 export interface LoggerConfig {
-  level: LogLevel;
-  mode: 'console' | 'structured';
-  sendToDiscord: boolean;
-  discordToken?: string;
-  discordChannelId?: string;
+  /**
+   * Discord通知の閾値
+   * このレベル以上のログのみDiscordに送信
+   * コンソール出力には影響しない（全レベル出力）
+   */
+  discordNotifyLevel: LogLevel;
+
+  /**
+   * Discord送信設定
+   */
+  discord?: {
+    token: string;
+    channelId: string;
+  };
 }

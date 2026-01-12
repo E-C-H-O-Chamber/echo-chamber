@@ -45,5 +45,6 @@ export const mockToolContext = {
   store: mockStore,
   storage: mockStorage,
   discordBotToken: 'mock-discord-token',
+  chatChannelKey: 'chat_channel_discord_mock',
   logger: mockLogger,
 };

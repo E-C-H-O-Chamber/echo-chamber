@@ -10,6 +10,7 @@ export interface ToolContext {
   store: KVNamespace;
   storage: DurableObjectStorage;
   discordBotToken: string;
+  chatChannelKey: string;
   logger: Logger;
 }
 

@@ -23,8 +23,10 @@ import {
 import { thinkDeeplyFunction } from '../../llm/openai/functions/think';
 import { getCurrentTimeFunction } from '../../llm/openai/functions/time';
 import { echoSystemMessage } from '../../llm/prompts/system';
+import { createThinkingStream } from '../../utils/thinking-stream';
 
 import type { ITool, ToolContext } from '../../llm/openai/functions';
+import type { EchoInstanceConfig } from '../../types/echo-config';
 import type { Logger } from '../../utils/logger';
 import type {
   ResponseFunctionToolCall,
@@ -39,33 +41,39 @@ import type {
 export class ThinkingEngine {
   private readonly env: Env;
   private readonly toolContext: ToolContext;
+  private readonly instanceConfig: EchoInstanceConfig;
 
   constructor(options: {
     env: Env;
     storage: DurableObjectStorage;
     store: KVNamespace;
     logger: Logger;
-    discordBotToken: string;
-    echoId: string;
+    instanceConfig: EchoInstanceConfig;
   }) {
     this.env = options.env;
+    this.instanceConfig = options.instanceConfig;
     this.toolContext = {
-      echoId: options.echoId,
+      echoId: options.instanceConfig.id,
       store: options.store,
       storage: options.storage,
-      discordBotToken: options.discordBotToken,
+      discordBotToken: options.instanceConfig.discordBotToken,
+      chatChannelKey: options.instanceConfig.chatChannelKey,
       logger: options.logger,
     };
   }
 
   async think(): Promise<ResponseUsage> {
-    const openai = this.createOpenAIClient();
+    const openai = await this.createOpenAIClient();
     const messages = await this.buildInitialMessages();
     const usage = await openai.call(messages);
     return usage;
   }
 
-  private createOpenAIClient(): OpenAIClient {
+  private async createOpenAIClient(): Promise<OpenAIClient> {
+    const thinkingStream = await createThinkingStream(
+      this.instanceConfig,
+      this.toolContext.store
+    );
     return new OpenAIClient(
       this.env,
       [
@@ -85,7 +93,8 @@ export class ThinkingEngine {
         // deleteTaskFunction,
         thinkDeeplyFunction,
       ],
-      this.toolContext
+      this.toolContext,
+      thinkingStream
     );
   }
 

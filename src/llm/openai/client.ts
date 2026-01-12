@@ -5,6 +5,7 @@ import { createLogger } from '../../utils/logger';
 
 import type { ITool, ToolContext } from './functions';
 import type { Logger } from '../../utils/logger';
+import type { ThinkingStream } from '../../utils/thinking-stream';
 import type {
   Response,
   ResponseInput,
@@ -23,15 +24,22 @@ export class OpenAIClient {
   private readonly tools: ITool[];
   private readonly toolContext: ToolContext;
   private readonly logger: Logger;
+  private readonly thinkingStream: ThinkingStream;
   private previousResponseId: string | undefined;
 
-  constructor(env: Env, tools: ITool[] = [], toolContext: ToolContext) {
+  constructor(
+    env: Env,
+    tools: ITool[],
+    toolContext: ToolContext,
+    thinkingStream: ThinkingStream
+  ) {
     this.client = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
     });
     this.tools = tools;
     this.toolContext = toolContext;
     this.logger = createLogger(env);
+    this.thinkingStream = thinkingStream;
   }
 
   /**
@@ -116,10 +124,9 @@ export class OpenAIClient {
     }
 
     await this.logger.debug(response.output.map(formatOutputItem).join('\n\n'));
-    const logOutput = formatLogOutput(response.output);
-    if (logOutput.length > 0) {
-      await this.logger.info(logOutput);
-    }
+
+    // 思考ログをThinkingStreamで送信（Loggerとは独立）
+    await this.thinkingStream.send(formatLogOutput(response.output));
 
     // 現在のレスポンスのusageを取得
     let totalUsage: ResponseUsage = response.usage ?? {

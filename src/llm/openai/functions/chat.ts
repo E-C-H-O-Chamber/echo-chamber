@@ -17,7 +17,7 @@ export const checkNotificationsFunction = new Tool(
   {},
   async (_, ctx) => {
     try {
-      const channelId = await ctx.store.get('chat_channel_discord_rin');
+      const channelId = await ctx.store.get(ctx.chatChannelKey);
       if (channelId === null) {
         await ctx.logger.error(
           'Chat channel ID not found in environment variables.'
@@ -64,7 +64,7 @@ export const readChatMessagesFunction = new Tool(
   },
   async ({ limit }, ctx) => {
     try {
-      const channelId = await ctx.store.get('chat_channel_discord_rin');
+      const channelId = await ctx.store.get(ctx.chatChannelKey);
       if (channelId === null) {
         await ctx.logger.error(
           'Chat channel ID not found in environment variables.'
@@ -119,7 +119,7 @@ export const sendChatMessageFunction = new Tool(
   },
   async ({ message }, ctx) => {
     try {
-      const channelId = await ctx.store.get('chat_channel_discord_rin');
+      const channelId = await ctx.store.get(ctx.chatChannelKey);
       if (channelId === null) {
         await ctx.logger.error(
           'Chat channel ID not found in environment variables.'
@@ -158,7 +158,7 @@ export const addReactionToChatMessageFunction = new Tool(
   },
   async ({ messageId, reaction }, ctx) => {
     try {
-      const channelId = await ctx.store.get('chat_channel_discord_rin');
+      const channelId = await ctx.store.get(ctx.chatChannelKey);
       if (channelId === null) {
         await ctx.logger.error(
           'Chat channel ID not found in environment variables.'

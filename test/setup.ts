@@ -15,10 +15,23 @@ vi.mock('../src/utils/logger', () => {
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
+    discordNotifyLevel: 'debug',
   };
 
   return {
     Logger: vi.fn(() => mockLogger),
     createLogger: vi.fn(() => mockLogger),
+  };
+});
+
+// ThinkingStream をグローバルにモック
+vi.mock('../src/utils/thinking-stream', () => {
+  const mockThinkingStream = {
+    send: vi.fn(),
+  };
+
+  return {
+    ThinkingStream: vi.fn(() => mockThinkingStream),
+    createThinkingStream: vi.fn(() => mockThinkingStream),
   };
 });

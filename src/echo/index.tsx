@@ -1,6 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { Hono } from 'hono';
 
+import { getInstanceConfig } from '../config/echo-registry';
 import { getUnreadMessageCount } from '../discord';
 import { formatDatetime } from '../utils/datetime';
 import { getErrorMessage } from '../utils/error';
@@ -17,6 +18,7 @@ import {
 import { StatusPage } from './view/pages/StatusPage';
 
 import type { EchoState, Knowledge, Task, Usage, UsageRecord } from './types';
+import type { EchoInstanceConfig } from '../types/echo-config';
 import type { Logger } from '../utils/logger';
 
 export class Echo extends DurableObject<Env> {
@@ -25,6 +27,7 @@ export class Echo extends DurableObject<Env> {
   private readonly router: Hono;
   private readonly logger: Logger;
   private readonly thinkingEngine: ThinkingEngine;
+  private readonly instanceConfig: EchoInstanceConfig;
 
   /**
    * The constructor is invoked once upon creation of the Durable Object, i.e. the first call to
@@ -38,14 +41,14 @@ export class Echo extends DurableObject<Env> {
     this.store = env.ECHO_KV;
     this.storage = ctx.storage;
     this.logger = createLogger(env);
+    // インスタンス設定を Registry から取得
+    this.instanceConfig = getInstanceConfig(env, 'rin');
     this.thinkingEngine = new ThinkingEngine({
       env,
       storage: this.storage,
       store: this.store,
       logger: this.logger,
-      // 既存仕様踏襲: 固定ID/トークン（後続の段階で動的化）
-      discordBotToken: env.DISCORD_BOT_TOKEN_RIN,
-      echoId: 'rin',
+      instanceConfig: this.instanceConfig,
     });
     this.router = new Hono()
       .basePath('/:id')
@@ -144,7 +147,7 @@ export class Echo extends DurableObject<Env> {
       const nextAlarm = new Date();
       nextAlarm.setHours(22, 0, 0, 0);
       await this.setNextAlarm(nextAlarm);
-      console.info(
+      await this.logger.info(
         `Echo is going to sleep and will wake at ${formatDatetime(nextAlarm)}.`
       );
       return;
@@ -407,11 +410,10 @@ export class Echo extends DurableObject<Env> {
    * 未読メッセージがあるか検証
    */
   private async validateChatMessage(): Promise<boolean> {
-    const id = await this.getId();
     const name = await this.getName();
 
     const channelId = await this.store.get<string>(
-      `chat_channel_discord_${id}`
+      this.instanceConfig.chatChannelKey
     );
 
     if (channelId === null) {
@@ -420,7 +422,7 @@ export class Echo extends DurableObject<Env> {
     }
 
     const unreadCount = await getUnreadMessageCount(
-      this.env.DISCORD_BOT_TOKEN_RIN,
+      this.instanceConfig.discordBotToken,
       channelId
     );
     if (unreadCount > 0) {

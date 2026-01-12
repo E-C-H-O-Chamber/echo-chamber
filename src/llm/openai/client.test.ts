@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { mockThinkingStream } from '../../../test/mocks/thinking-stream';
 import { mockToolContext } from '../../../test/mocks/tool';
 
 import {
@@ -45,7 +46,8 @@ describe('OpenAI Client', () => {
     const client = new OpenAIClient(
       env,
       [thinkDeeplyFunction],
-      mockToolContext
+      mockToolContext,
+      mockThinkingStream
     );
     const input = [
       {
@@ -74,7 +76,8 @@ describe('OpenAI Client', () => {
       const client = new OpenAIClient(
         env,
         [thinkDeeplyFunction],
-        mockToolContext
+        mockToolContext,
+        mockThinkingStream
       );
       const result = await client.executeFunction({
         type: 'function_call',
@@ -93,7 +96,8 @@ describe('OpenAI Client', () => {
       const client = new OpenAIClient(
         env,
         [thinkDeeplyFunction],
-        mockToolContext
+        mockToolContext,
+        mockThinkingStream
       );
       const result = await client.executeFunction({
         type: 'function_call',
@@ -113,7 +117,8 @@ describe('OpenAI Client', () => {
       const client = new OpenAIClient(
         env,
         [thinkDeeplyFunction],
-        mockToolContext
+        mockToolContext,
+        mockThinkingStream
       );
       const result = await client.executeFunction({
         type: 'function_call',
@@ -144,7 +149,12 @@ describe('OpenAI Client', () => {
           throw new Error('Function execution error');
         },
       } as const;
-      const client = new OpenAIClient(env, [errorFunction], mockToolContext);
+      const client = new OpenAIClient(
+        env,
+        [errorFunction],
+        mockToolContext,
+        mockThinkingStream
+      );
       const result = await client.executeFunction({
         type: 'function_call',
         name: 'error_function',
@@ -165,7 +175,8 @@ describe('OpenAI Client', () => {
       const client = new OpenAIClient(
         env,
         [thinkDeeplyFunction],
-        mockToolContext
+        mockToolContext,
+        mockThinkingStream
       );
       const input: ResponseInputItem[] = [
         {
@@ -207,7 +218,8 @@ describe('OpenAI Client', () => {
       const client = new OpenAIClient(
         env,
         [thinkDeeplyFunction],
-        mockToolContext
+        mockToolContext,
+        mockThinkingStream
       );
       const input: ResponseInputItem[] = [
         {
@@ -312,7 +324,8 @@ describe('OpenAI Client', () => {
       const client = new OpenAIClient(
         env,
         [thinkDeeplyFunction],
-        mockToolContext
+        mockToolContext,
+        mockThinkingStream
       );
       const input: ResponseInputItem[] = [
         {
