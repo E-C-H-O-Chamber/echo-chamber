@@ -7,7 +7,14 @@
 /**
  * Echo インスタンス ID
  */
-export type EchoInstanceId = 'rin';
+export type EchoInstanceId = 'rin' | 'marie';
+
+/**
+ * 文字列が有効な EchoInstanceId かどうかを判定する型ガード
+ */
+export function isValidInstanceId(id: string): id is EchoInstanceId {
+  return id === 'rin' || id === 'marie';
+}
 
 /**
  * Echo インスタンスごとの設定
@@ -18,6 +25,9 @@ export interface EchoInstanceConfig {
 
   /** インスタンス名（表示用） */
   name: string;
+
+  /** システムプロンプト */
+  systemPrompt: string;
 
   /** Discord Bot トークン（インスタンス固有） */
   discordBotToken: string;

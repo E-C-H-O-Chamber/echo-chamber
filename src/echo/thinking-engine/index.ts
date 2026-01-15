@@ -22,7 +22,6 @@ import {
 // } from '../../llm/openai/functions/task';
 import { thinkDeeplyFunction } from '../../llm/openai/functions/think';
 import { getCurrentTimeFunction } from '../../llm/openai/functions/time';
-import { echoSystemMessage } from '../../llm/prompts/system';
 import { createThinkingStream } from '../../utils/thinking-stream';
 
 import type { ITool, ToolContext } from '../../llm/openai/functions';
@@ -118,7 +117,7 @@ export class ThinkingEngine {
     return [
       {
         role: 'developer',
-        content: echoSystemMessage,
+        content: this.instanceConfig.systemPrompt,
       },
       this.createFunctionCallMessage(recallContextFunction),
       await this.createFunctionCallOutputMessage(recallContextFunction),

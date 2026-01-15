@@ -96,7 +96,7 @@ const LANGUAGE_AND_TONE = `<diction_and_tone>
 </examples>
 </diction_and_tone>`;
 
-export const echoSystemMessage = [
+export default [
   CORE_IDENTITY,
   BEHAVIORAL_RULES,
   AVAILABLE_TOOLS,

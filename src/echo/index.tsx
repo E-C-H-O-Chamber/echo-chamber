@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 
 import { getInstanceConfig } from '../config/echo-registry';
 import { getUnreadMessageCount } from '../discord';
+import { isValidInstanceId } from '../types/echo-config';
 import { formatDatetime } from '../utils/datetime';
 import { getErrorMessage } from '../utils/error';
 import { createLogger } from '../utils/logger';
@@ -18,7 +19,7 @@ import {
 import { StatusPage } from './view/pages/StatusPage';
 
 import type { EchoState, Knowledge, Task, Usage, UsageRecord } from './types';
-import type { EchoInstanceConfig } from '../types/echo-config';
+import type { EchoInstanceConfig, EchoInstanceId } from '../types/echo-config';
 import type { Logger } from '../utils/logger';
 
 export class Echo extends DurableObject<Env> {
@@ -26,8 +27,11 @@ export class Echo extends DurableObject<Env> {
   private readonly storage: DurableObjectStorage;
   private readonly router: Hono;
   private readonly logger: Logger;
-  private readonly thinkingEngine: ThinkingEngine;
-  private readonly instanceConfig: EchoInstanceConfig;
+  private readonly _env: Env;
+
+  // 遅延初期化されるプロパティ（ensureInitializedで設定されるためreadonlyではない）
+  private instanceConfig: EchoInstanceConfig | null = null;
+  private thinkingEngine: ThinkingEngine | null = null;
 
   /**
    * The constructor is invoked once upon creation of the Durable Object, i.e. the first call to
@@ -41,17 +45,18 @@ export class Echo extends DurableObject<Env> {
     this.store = env.ECHO_KV;
     this.storage = ctx.storage;
     this.logger = createLogger(env);
-    // インスタンス設定を Registry から取得
-    this.instanceConfig = getInstanceConfig(env, 'rin');
-    this.thinkingEngine = new ThinkingEngine({
-      env,
-      storage: this.storage,
-      store: this.store,
-      logger: this.logger,
-      instanceConfig: this.instanceConfig,
-    });
+    this._env = env;
     this.router = new Hono()
       .basePath('/:id')
+      // 全リクエストで遅延初期化を実行するミドルウェア
+      .use('*', async (c, next) => {
+        const id = c.req.param('id');
+        if (!isValidInstanceId(id)) {
+          return c.text(`Invalid instance ID: ${id}`, 400);
+        }
+        await this.ensureInitialized(id);
+        await next();
+      })
       .get('/', async (c) => {
         const id = await this.getId();
         const name = await this.getName();
@@ -95,7 +100,7 @@ export class Echo extends DurableObject<Env> {
         });
       })
       .post('/wake', async (c) => {
-        await this.wake(c.req.param('id'), true);
+        await this.wake(true);
         return c.text('OK.');
       })
       .post('/sleep', async (c) => {
@@ -137,12 +142,70 @@ export class Echo extends DurableObject<Env> {
     return this.router.fetch(request);
   }
 
+  /**
+   * インスタンスの遅延初期化
+   * 最初のリクエスト時に呼び出され、instanceConfigとThinkingEngineを設定する
+   */
+  private async ensureInitialized(id: EchoInstanceId): Promise<void> {
+    // 既に同じIDで初期化済みの場合はスキップ
+    if (this.instanceConfig?.id === id) {
+      return;
+    }
+
+    this.instanceConfig = getInstanceConfig(this._env, id);
+    this.thinkingEngine = new ThinkingEngine({
+      env: this._env,
+      storage: this.storage,
+      store: this.store,
+      logger: this.logger,
+      instanceConfig: this.instanceConfig,
+    });
+
+    // ストレージにID/名前を保存（alarmから参照するため）
+    await this.storage.put('id', id);
+    await this.storage.put('name', await this.store.get<string>(`name_${id}`));
+  }
+
+  /**
+   * instanceConfigを取得（初期化されていない場合はエラー）
+   */
+  private getInstanceConfigOrThrow(): EchoInstanceConfig {
+    if (!this.instanceConfig) {
+      throw new Error('Echo instance not initialized');
+    }
+    return this.instanceConfig;
+  }
+
+  /**
+   * ThinkingEngineを取得（初期化されていない場合はエラー）
+   */
+  private getThinkingEngineOrThrow(): ThinkingEngine {
+    if (!this.thinkingEngine) {
+      throw new Error('ThinkingEngine not initialized');
+    }
+    return this.thinkingEngine;
+  }
+
   async alarm(alarmInfo?: AlarmInvocationInfo): Promise<void> {
     await this.logger.debug(
       `Alarm triggered with info: ${JSON.stringify(alarmInfo)}`
     );
+
+    // ストレージからIDを読み取り初期化
+    const storedId = await this.storage.get<string>('id');
+    if (storedId == null || !isValidInstanceId(storedId)) {
+      await this.logger.error(
+        'No valid instance ID in storage. Cannot run alarm.\nEcho going to sleep.'
+      );
+      await this.sleep(true);
+      return;
+    }
+
+    await this.ensureInitialized(storedId);
+
     const now = new Date();
-    if (now.getHours() === 18) {
+    const state = await this.getState();
+    if (now.getHours() === 18 && state === 'Idling') {
       await this.sleep();
       const nextAlarm = new Date();
       nextAlarm.setHours(22, 0, 0, 0);
@@ -152,8 +215,8 @@ export class Echo extends DurableObject<Env> {
       );
       return;
     }
-    if (now.getHours() === 22) {
-      await this.wake(await this.getId(), true);
+    if (now.getHours() === 22 && state === 'Sleeping') {
+      await this.wake(true);
     }
     await this.run();
     await this.setNextAlarm();
@@ -235,10 +298,7 @@ export class Echo extends DurableObject<Env> {
     return usageRecord[getTodayUsageKey()] ?? null;
   }
 
-  async wake(id: string, force = false): Promise<void> {
-    await this.storage.put('id', id);
-    await this.storage.put('name', await this.store.get<string>(`name_${id}`));
-
+  async wake(force = false): Promise<void> {
     const state = await this.getState();
 
     if (!force && state === 'Sleeping') {
@@ -291,7 +351,7 @@ export class Echo extends DurableObject<Env> {
     await this.logger.info(`${name}が思考を開始しました。`);
 
     try {
-      const usage = await this.thinkingEngine.think();
+      const usage = await this.getThinkingEngineOrThrow().think();
       await this.logger.info(`usage: ${usage.total_tokens}`);
       await this.updateUsage(convertUsage(usage));
       await this.logger.info(`${name}が思考を正常に完了しました。`);
@@ -411,9 +471,10 @@ export class Echo extends DurableObject<Env> {
    */
   private async validateChatMessage(): Promise<boolean> {
     const name = await this.getName();
+    const instanceConfig = this.getInstanceConfigOrThrow();
 
     const channelId = await this.store.get<string>(
-      this.instanceConfig.chatChannelKey
+      instanceConfig.chatChannelKey
     );
 
     if (channelId === null) {
@@ -422,7 +483,7 @@ export class Echo extends DurableObject<Env> {
     }
 
     const unreadCount = await getUnreadMessageCount(
-      this.instanceConfig.discordBotToken,
+      instanceConfig.discordBotToken,
       channelId
     );
     if (unreadCount > 0) {

@@ -5,6 +5,8 @@
  * 新しいインスタンスを追加する場合はこのファイルのみを更新する
  */
 
+import systemPromptRin from '../llm/prompts/rin';
+
 import type { EchoInstanceConfig, EchoInstanceId } from '../types/echo-config';
 
 /**
@@ -21,10 +23,19 @@ export function getInstanceConfig(
   const configs: Record<EchoInstanceId, EchoInstanceConfig> = {
     rin: {
       id: 'rin',
-      name: 'Rin',
+      name: 'リン',
+      systemPrompt: systemPromptRin,
       discordBotToken: env.DISCORD_BOT_TOKEN_RIN,
       chatChannelKey: 'chat_channel_discord_rin',
       thinkingChannelKey: 'thinking_channel_discord_rin',
+    },
+    marie: {
+      id: 'marie',
+      name: 'マリー',
+      systemPrompt: '', // TODO: マリーのシステムプロンプトを設定
+      discordBotToken: env.DISCORD_BOT_TOKEN_MARIE,
+      chatChannelKey: 'chat_channel_discord_marie',
+      thinkingChannelKey: 'thinking_channel_discord_marie',
     },
   };
 
