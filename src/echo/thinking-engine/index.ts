@@ -23,10 +23,13 @@ import {
 import { thinkDeeplyFunction } from '../../llm/openai/functions/think';
 import { getCurrentTimeFunction } from '../../llm/openai/functions/time';
 import { createThinkingStream } from '../../utils/thinking-stream';
+import { getTodayUsageKey } from '../usage';
 
 import type { ITool, ToolContext } from '../../llm/openai/functions';
 import type { EchoInstanceConfig } from '../../types/echo-config';
 import type { Logger } from '../../utils/logger';
+import type { ThinkingStream } from '../../utils/thinking-stream';
+import type { UsageRecord } from '../types';
 import type {
   ResponseFunctionToolCall,
   ResponseInput,
@@ -62,17 +65,23 @@ export class ThinkingEngine {
   }
 
   async think(): Promise<ResponseUsage> {
-    const openai = await this.createOpenAIClient();
-    const messages = await this.buildInitialMessages();
-    const usage = await openai.call(messages);
-    return usage;
-  }
-
-  private async createOpenAIClient(): Promise<OpenAIClient> {
     const thinkingStream = await createThinkingStream(
       this.instanceConfig,
       this.toolContext.store
     );
+    await thinkingStream.send('*Thinking started...*');
+    const openai = this.createOpenAIClient(thinkingStream);
+    const messages = await this.buildInitialMessages();
+    const usage = await openai.call(messages);
+    await thinkingStream.send(
+      `*Thinking completed.*\nUsage: ${usage.total_tokens} tokens (Total: ${
+        (await this.getCurrentUsage()) + usage.total_tokens
+      } tokens)`
+    );
+    return usage;
+  }
+
+  private createOpenAIClient(thinkingStream: ThinkingStream): OpenAIClient {
     return new OpenAIClient(
       this.env,
       [
@@ -146,5 +155,19 @@ export class ThinkingEngine {
       call_id: tool.name,
       output: await tool.execute('{}', this.toolContext),
     };
+  }
+
+  private async getCurrentUsage(): Promise<number> {
+    const usage = await this.toolContext.storage.get<UsageRecord>('usage');
+    if (!usage) {
+      return 0;
+    }
+
+    const todayUsage = usage[getTodayUsageKey()];
+    if (!todayUsage) {
+      return 0;
+    }
+
+    return todayUsage.total_tokens;
   }
 }
