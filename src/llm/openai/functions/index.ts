@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { getErrorMessage } from '../../../utils/error';
 
+import type { MemorySystem } from '../../../echo/memory-system';
 import type { EchoInstanceConfig } from '../../../types/echo-config';
 import type { Logger } from '../../../utils/logger';
 import type { FunctionTool } from 'openai/resources/responses/responses';
@@ -9,6 +10,7 @@ import type { FunctionTool } from 'openai/resources/responses/responses';
 export interface ToolContext {
   instanceConfig: EchoInstanceConfig;
   storage: DurableObjectStorage;
+  memorySystem: MemorySystem;
   logger: Logger;
 }
 

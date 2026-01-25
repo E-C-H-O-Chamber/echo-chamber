@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 
 import { createLogger } from '../../src/utils/logger';
 
+import type { MemorySystem } from '../../src/echo/memory-system';
 import type { ToolContext } from '../../src/llm/openai/functions';
 import type { EchoInstanceConfig } from '../../src/types/echo-config';
 
@@ -35,6 +36,11 @@ vi.spyOn(mockLogger, 'info').mockImplementation(vi.fn());
 vi.spyOn(mockLogger, 'warn').mockImplementation(vi.fn());
 vi.spyOn(mockLogger, 'error').mockImplementation(vi.fn());
 
+const mockMemorySystem: MemorySystem = {
+  storeMemory: vi.fn(),
+  searchMemory: vi.fn().mockResolvedValue([]),
+} as unknown as MemorySystem;
+
 export const mockInstanceConfig: EchoInstanceConfig = {
   id: 'rin',
   name: 'テスト用リン',
@@ -47,5 +53,6 @@ export const mockInstanceConfig: EchoInstanceConfig = {
 export const mockToolContext: ToolContext = {
   instanceConfig: mockInstanceConfig,
   storage: mockStorage as unknown as DurableObjectStorage,
+  memorySystem: mockMemorySystem,
   logger: mockLogger,
 };

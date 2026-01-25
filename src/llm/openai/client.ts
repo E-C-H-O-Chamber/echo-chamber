@@ -4,6 +4,7 @@ import { getErrorMessage } from '../../utils/error';
 import { createLogger } from '../../utils/logger';
 
 import type { ITool, ToolContext } from './functions';
+import type { Emotion } from '../../echo/types';
 import type { Logger } from '../../utils/logger';
 import type { ThinkingStream } from '../../utils/thinking-stream';
 import type {
@@ -249,6 +250,12 @@ const functionCallFormatters: Record<
 
     return `*search_knowledge: ${query}${category == null ? ` (${category})` : ''}${tags ? ` [${tags.join(', ')}]` : ''}*`;
   },
+  store_memory: (args) => {
+    const content = args.content as string;
+    const { valence, arousal } = args.emotion as Emotion;
+    return `*store_memory: ${content}\n(${valence}, ${arousal})*`;
+  },
+  search_memory: (args) => `*search_memory: ${args.query as string}*`,
 };
 
 export function formatInputItem(item: ResponseInputItem): string {

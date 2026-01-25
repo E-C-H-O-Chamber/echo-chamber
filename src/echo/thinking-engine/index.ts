@@ -1,4 +1,5 @@
 import { OpenAIClient } from '../../llm/openai/client';
+import { OpenAIEmbeddingService } from '../../llm/openai/embedding';
 import {
   addReactionToChatMessageFunction,
   checkNotificationsFunction,
@@ -9,10 +10,14 @@ import {
   storeContextFunction,
   recallContextFunction,
 } from '../../llm/openai/functions/context';
+// import {
+//   storeKnowledgeFunction,
+//   searchKnowledgeFunction,
+// } from '../../llm/openai/functions/knowledge';
 import {
-  storeKnowledgeFunction,
-  searchKnowledgeFunction,
-} from '../../llm/openai/functions/knowledge';
+  storeMemoryFunction,
+  searchMemoryFunction,
+} from '../../llm/openai/functions/memory';
 // import {
 //   createTaskFunction,
 //   listTaskFunction,
@@ -23,6 +28,7 @@ import {
 import { thinkDeeplyFunction } from '../../llm/openai/functions/think';
 import { getCurrentTimeFunction } from '../../llm/openai/functions/time';
 import { ThinkingStream } from '../../utils/thinking-stream';
+import { MemorySystem } from '../memory-system';
 import { getTodayUsageKey } from '../usage';
 
 import type { ITool, ToolContext } from '../../llm/openai/functions';
@@ -52,9 +58,16 @@ export class ThinkingEngine {
   }) {
     this.env = options.env;
     this.instanceConfig = options.instanceConfig;
+    const embeddingService = new OpenAIEmbeddingService(options.env);
+    const memorySystem = new MemorySystem({
+      storage: options.storage,
+      embeddingService,
+      logger: options.logger,
+    });
     this.toolContext = {
       instanceConfig: options.instanceConfig,
       storage: options.storage,
+      memorySystem,
       logger: options.logger,
     };
   }
@@ -84,8 +97,10 @@ export class ThinkingEngine {
         addReactionToChatMessageFunction,
         storeContextFunction,
         recallContextFunction,
-        storeKnowledgeFunction,
-        searchKnowledgeFunction,
+        // storeKnowledgeFunction,
+        // searchKnowledgeFunction,
+        storeMemoryFunction,
+        searchMemoryFunction,
         // listTaskFunction,
         // createTaskFunction,
         // updateTaskFunction,

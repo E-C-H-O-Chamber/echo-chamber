@@ -35,3 +35,17 @@ export interface Knowledge {
   lastAccessedAt: string;
   forgottenAt: string;
 }
+
+export interface Emotion {
+  valence: number; // [-1.0, 1.0] - negative to positive
+  arousal: number; // [0.0, 1.0] - calm to excited
+  labels: string[]; // e.g., ["intellectual-engagement", "mild-anticipation"]
+}
+
+export interface Memory {
+  content: string; // Max 500 characters
+  embedding: number[]; // 1536-dim vector from content
+  emotion: Emotion;
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
