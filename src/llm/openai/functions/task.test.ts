@@ -8,7 +8,7 @@ import {
   vi,
 } from 'vitest';
 
-import { mockToolContext } from '../../../../test/mocks/tool';
+import { mockStorage, mockToolContext } from '../../../../test/mocks/tool';
 
 import {
   createTaskFunction,
@@ -63,8 +63,8 @@ describe('Task Functions', () => {
         };
         const result = await createTaskFunction.handler(args, mockToolContext);
 
-        expect(mockToolContext.storage.get).toHaveBeenCalledWith('tasks');
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith('tasks', [
+        expect(mockStorage.get).toHaveBeenCalledWith('tasks');
+        expect(mockStorage.put).toHaveBeenCalledWith('tasks', [
           {
             name: 'test-task',
             content: 'Test task content',
@@ -77,7 +77,7 @@ describe('Task Functions', () => {
       });
 
       it('同じ名前のタスクが既に存在する場合はエラーを返す', async () => {
-        mockToolContext.storage.get.mockResolvedValue([
+        mockStorage.get.mockResolvedValue([
           {
             name: 'existing-task',
             content: 'Existing task',
@@ -96,7 +96,7 @@ describe('Task Functions', () => {
           success: false,
           error: 'Task with name "existing-task" already exists',
         });
-        expect(mockToolContext.storage.put).not.toHaveBeenCalled();
+        expect(mockStorage.put).not.toHaveBeenCalled();
       });
 
       it('過去の日時を指定した場合はエラーを返す', async () => {
@@ -111,13 +111,11 @@ describe('Task Functions', () => {
           success: false,
           error: 'Execution time cannot be in the past',
         });
-        expect(mockToolContext.storage.put).not.toHaveBeenCalled();
+        expect(mockStorage.put).not.toHaveBeenCalled();
       });
 
       it('storage.getでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.get.mockRejectedValue(
-          new Error('Storage error')
-        );
+        mockStorage.get.mockRejectedValue(new Error('Storage error'));
 
         const args = {
           name: 'test-task',
@@ -133,9 +131,7 @@ describe('Task Functions', () => {
       });
 
       it('storage.putでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.put.mockRejectedValue(
-          new Error('Storage error')
-        );
+        mockStorage.put.mockRejectedValue(new Error('Storage error'));
 
         const args = {
           name: 'test-task',
@@ -179,12 +175,12 @@ describe('Task Functions', () => {
             execution_time: '2025-08-04T12:00:00.000Z',
           },
         ];
-        mockToolContext.storage.get.mockResolvedValue(mockTasks);
+        mockStorage.get.mockResolvedValue(mockTasks);
 
         const args = {};
         const result = await listTaskFunction.handler(args, mockToolContext);
 
-        expect(mockToolContext.storage.get).toHaveBeenCalledWith('tasks');
+        expect(mockStorage.get).toHaveBeenCalledWith('tasks');
         expect(result).toEqual({
           success: true,
           tasks: [
@@ -215,7 +211,7 @@ describe('Task Functions', () => {
             execution_time: '2025-08-04T10:00:00.000Z',
           },
         ];
-        mockToolContext.storage.get.mockResolvedValue(mockTasks);
+        mockStorage.get.mockResolvedValue(mockTasks);
         const args = {};
         const result = await listTaskFunction.handler(args, mockToolContext);
 
@@ -237,7 +233,7 @@ describe('Task Functions', () => {
       });
 
       it('タスクが存在しない場合は空の配列を返す', async () => {
-        mockToolContext.storage.get.mockResolvedValue(undefined);
+        mockStorage.get.mockResolvedValue(undefined);
 
         const args = {};
         const result = await listTaskFunction.handler(args, mockToolContext);
@@ -249,9 +245,7 @@ describe('Task Functions', () => {
       });
 
       it('storage.getでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.get.mockRejectedValue(
-          new Error('Storage error')
-        );
+        mockStorage.get.mockRejectedValue(new Error('Storage error'));
 
         const args = {};
         const result = await listTaskFunction.handler(args, mockToolContext);
@@ -295,7 +289,7 @@ describe('Task Functions', () => {
             execution_time: '2025-08-04T10:00:00.000Z',
           },
         ];
-        mockToolContext.storage.get.mockResolvedValue(mockTasks);
+        mockStorage.get.mockResolvedValue(mockTasks);
 
         const args = {
           name: 'test-task',
@@ -304,7 +298,7 @@ describe('Task Functions', () => {
         };
         const result = await updateTaskFunction.handler(args, mockToolContext);
 
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith('tasks', [
+        expect(mockStorage.put).toHaveBeenCalledWith('tasks', [
           {
             name: 'test-task',
             content: 'Updated content',
@@ -333,7 +327,7 @@ describe('Task Functions', () => {
           success: false,
           error: 'Task with name "non-existent-task" not found',
         });
-        expect(mockToolContext.storage.put).not.toHaveBeenCalled();
+        expect(mockStorage.put).not.toHaveBeenCalled();
       });
 
       it('タスク内容のみの更新が可能', async () => {
@@ -344,7 +338,7 @@ describe('Task Functions', () => {
             execution_time: '2025-08-04T10:00:00.000Z',
           },
         ];
-        mockToolContext.storage.get.mockResolvedValue(mockTasks);
+        mockStorage.get.mockResolvedValue(mockTasks);
 
         const args = {
           name: 'test-task',
@@ -352,7 +346,7 @@ describe('Task Functions', () => {
         };
         const result = await updateTaskFunction.handler(args, mockToolContext);
 
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith('tasks', [
+        expect(mockStorage.put).toHaveBeenCalledWith('tasks', [
           {
             name: 'test-task',
             content: 'Updated content only',
@@ -377,7 +371,7 @@ describe('Task Functions', () => {
             execution_time: '2025-08-04T10:00:00.000Z',
           },
         ];
-        mockToolContext.storage.get.mockResolvedValue(mockTasks);
+        mockStorage.get.mockResolvedValue(mockTasks);
 
         const args = {
           name: 'test-task',
@@ -385,7 +379,7 @@ describe('Task Functions', () => {
         };
         const result = await updateTaskFunction.handler(args, mockToolContext);
 
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith('tasks', [
+        expect(mockStorage.put).toHaveBeenCalledWith('tasks', [
           {
             name: 'test-task',
             content: 'Original content',
@@ -410,7 +404,7 @@ describe('Task Functions', () => {
             execution_time: '2025-08-04T10:00:00.000Z',
           },
         ];
-        mockToolContext.storage.get.mockResolvedValue(mockTasks);
+        mockStorage.get.mockResolvedValue(mockTasks);
 
         const args = {
           name: 'test-task',
@@ -421,7 +415,7 @@ describe('Task Functions', () => {
           success: false,
           error: 'At least one of content or execution_time must be provided',
         });
-        expect(mockToolContext.storage.put).not.toHaveBeenCalled();
+        expect(mockStorage.put).not.toHaveBeenCalled();
       });
 
       it('過去の日時を指定して更新しようとした場合はエラーを返す', async () => {
@@ -432,7 +426,7 @@ describe('Task Functions', () => {
             execution_time: '2025-08-04T10:00:00.000Z',
           },
         ];
-        mockToolContext.storage.get.mockResolvedValue(mockTasks);
+        mockStorage.get.mockResolvedValue(mockTasks);
 
         const args = {
           name: 'test-task',
@@ -444,13 +438,11 @@ describe('Task Functions', () => {
           success: false,
           error: 'Execution time cannot be in the past',
         });
-        expect(mockToolContext.storage.put).not.toHaveBeenCalled();
+        expect(mockStorage.put).not.toHaveBeenCalled();
       });
 
       it('storage.getでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.get.mockRejectedValue(
-          new Error('Storage error')
-        );
+        mockStorage.get.mockRejectedValue(new Error('Storage error'));
 
         const args = {
           name: 'test-task',
@@ -472,10 +464,8 @@ describe('Task Functions', () => {
             execution_time: '2025-08-04T10:00:00.000Z',
           },
         ];
-        mockToolContext.storage.get.mockResolvedValue(mockTasks);
-        mockToolContext.storage.put.mockRejectedValue(
-          new Error('Storage error')
-        );
+        mockStorage.get.mockResolvedValue(mockTasks);
+        mockStorage.put.mockRejectedValue(new Error('Storage error'));
 
         const args = {
           name: 'test-task',
@@ -520,12 +510,12 @@ describe('Task Functions', () => {
             execution_time: '2025-08-04T14:00:00.000Z',
           },
         ];
-        mockToolContext.storage.get.mockResolvedValue(mockTasks);
+        mockStorage.get.mockResolvedValue(mockTasks);
 
         const args = { name: 'test-task' };
         const result = await deleteTaskFunction.handler(args, mockToolContext);
 
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith('tasks', [
+        expect(mockStorage.put).toHaveBeenCalledWith('tasks', [
           {
             name: 'other-task',
             content: 'Other content',
@@ -545,13 +535,11 @@ describe('Task Functions', () => {
           success: false,
           error: 'Task with name "non-existent-task" not found',
         });
-        expect(mockToolContext.storage.put).not.toHaveBeenCalled();
+        expect(mockStorage.put).not.toHaveBeenCalled();
       });
 
       it('storage.getでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.get.mockRejectedValue(
-          new Error('Storage error')
-        );
+        mockStorage.get.mockRejectedValue(new Error('Storage error'));
 
         const args = { name: 'test-task' };
         const result = await deleteTaskFunction.handler(args, mockToolContext);
@@ -570,10 +558,8 @@ describe('Task Functions', () => {
             execution_time: '2025-08-04T12:00:00.000Z',
           },
         ];
-        mockToolContext.storage.get.mockResolvedValue(mockTasks);
-        mockToolContext.storage.put.mockRejectedValue(
-          new Error('Storage error')
-        );
+        mockStorage.get.mockResolvedValue(mockTasks);
+        mockStorage.put.mockRejectedValue(new Error('Storage error'));
 
         const args = { name: 'test-task' };
         const result = await deleteTaskFunction.handler(args, mockToolContext);
@@ -615,7 +601,7 @@ describe('Task Functions', () => {
             execution_time: '2025-08-04T14:00:00.000Z',
           },
         ];
-        mockToolContext.storage.get.mockResolvedValue(mockTasks);
+        mockStorage.get.mockResolvedValue(mockTasks);
 
         const args = { name: 'test-task' };
         const result = await completeTaskFunction.handler(
@@ -623,7 +609,7 @@ describe('Task Functions', () => {
           mockToolContext
         );
 
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith('tasks', [
+        expect(mockStorage.put).toHaveBeenCalledWith('tasks', [
           {
             name: 'other-task',
             content: 'Other content',
@@ -646,13 +632,11 @@ describe('Task Functions', () => {
           success: false,
           error: 'Task with name "non-existent-task" not found',
         });
-        expect(mockToolContext.storage.put).not.toHaveBeenCalled();
+        expect(mockStorage.put).not.toHaveBeenCalled();
       });
 
       it('storage.getでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.get.mockRejectedValue(
-          new Error('Storage error')
-        );
+        mockStorage.get.mockRejectedValue(new Error('Storage error'));
 
         const args = { name: 'test-task' };
         const result = await completeTaskFunction.handler(
@@ -674,10 +658,8 @@ describe('Task Functions', () => {
             execution_time: '2025-08-04T12:00:00.000Z',
           },
         ];
-        mockToolContext.storage.get.mockResolvedValue(mockTasks);
-        mockToolContext.storage.put.mockRejectedValue(
-          new Error('Storage error')
-        );
+        mockStorage.get.mockResolvedValue(mockTasks);
+        mockStorage.put.mockRejectedValue(new Error('Storage error'));
 
         const args = { name: 'test-task' };
         const result = await completeTaskFunction.handler(

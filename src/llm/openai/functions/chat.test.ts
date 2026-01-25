@@ -16,7 +16,6 @@ import {
   sendChatMessageFunction,
 } from './chat';
 
-const CHAT_UNAVAILABLE_ERROR = 'Chat tool is currently unavailable.';
 const CHAT_API_ERROR = 'Chat API error';
 
 vi.mock('../../../discord', async (importOriginal) => {
@@ -248,16 +247,6 @@ describe('checkNotificationsFunction', () => {
       expect(result).toEqual(expected);
     });
 
-    it('チャンネルIDが存在しない', async () => {
-      mockToolContext.store.get.mockResolvedValue(null);
-      const result = await checkNotificationsFunction.handler(
-        {},
-        mockToolContext
-      );
-      expect(result.success).toBe(false);
-      expect(result.error).toBe(CHAT_UNAVAILABLE_ERROR);
-    });
-
     it('空のチャンネル（メッセージ0件）', async () => {
       const mockNotificationDetails = {
         unreadCount: 0,
@@ -426,16 +415,6 @@ describe('readChatMessagesFunction', () => {
       expect(result).toEqual(expected);
     });
 
-    it('チャンネルIDが存在しない', async () => {
-      mockToolContext.store.get.mockResolvedValue(null);
-      const result = await readChatMessagesFunction.handler(
-        { limit: 1 },
-        mockToolContext
-      );
-      expect(result.success).toBe(false);
-      expect(result.error).toBe(CHAT_UNAVAILABLE_ERROR);
-    });
-
     it('getChannelMessages エラー', async () => {
       const error = new Error(CHAT_API_ERROR);
       vi.mocked(getChannelMessages).mockRejectedValue(error);
@@ -481,16 +460,6 @@ describe('sendChatMessageFunction', () => {
         success: true,
       };
       expect(result).toEqual(expected);
-    });
-
-    it('チャンネルIDが存在しない', async () => {
-      mockToolContext.store.get.mockResolvedValue(null);
-      const result = await sendChatMessageFunction.handler(
-        { message: 'Hello' },
-        mockToolContext
-      );
-      expect(result.success).toBe(false);
-      expect(result.error).toBe(CHAT_UNAVAILABLE_ERROR);
     });
 
     it('sendChannelMessage エラー', async () => {
@@ -547,16 +516,6 @@ describe('addReactionToChatMessageFunction', () => {
         success: true,
       };
       expect(result).toEqual(expected);
-    });
-
-    it('チャンネルIDが存在しない', async () => {
-      mockToolContext.store.get.mockResolvedValue(null);
-      const result = await addReactionToChatMessageFunction.handler(
-        { messageId: '123456789', reaction: '👍' },
-        mockToolContext
-      );
-      expect(result.success).toBe(false);
-      expect(result.error).toBe(CHAT_UNAVAILABLE_ERROR);
     });
 
     it('addReactionToMessage エラー', async () => {

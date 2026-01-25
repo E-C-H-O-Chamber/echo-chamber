@@ -22,13 +22,12 @@ import {
 // } from '../../llm/openai/functions/task';
 import { thinkDeeplyFunction } from '../../llm/openai/functions/think';
 import { getCurrentTimeFunction } from '../../llm/openai/functions/time';
-import { createThinkingStream } from '../../utils/thinking-stream';
+import { ThinkingStream } from '../../utils/thinking-stream';
 import { getTodayUsageKey } from '../usage';
 
 import type { ITool, ToolContext } from '../../llm/openai/functions';
 import type { EchoInstanceConfig } from '../../types/echo-config';
 import type { Logger } from '../../utils/logger';
-import type { ThinkingStream } from '../../utils/thinking-stream';
 import type { UsageRecord } from '../types';
 import type {
   ResponseFunctionToolCall,
@@ -48,27 +47,20 @@ export class ThinkingEngine {
   constructor(options: {
     env: Env;
     storage: DurableObjectStorage;
-    store: KVNamespace;
     logger: Logger;
     instanceConfig: EchoInstanceConfig;
   }) {
     this.env = options.env;
     this.instanceConfig = options.instanceConfig;
     this.toolContext = {
-      echoId: options.instanceConfig.id,
-      store: options.store,
+      instanceConfig: options.instanceConfig,
       storage: options.storage,
-      discordBotToken: options.instanceConfig.discordBotToken,
-      chatChannelKey: options.instanceConfig.chatChannelKey,
       logger: options.logger,
     };
   }
 
   async think(): Promise<ResponseUsage> {
-    const thinkingStream = await createThinkingStream(
-      this.instanceConfig,
-      this.toolContext.store
-    );
+    const thinkingStream = new ThinkingStream(this.instanceConfig);
     await thinkingStream.send('*Thinking started...*');
     const openai = this.createOpenAIClient(thinkingStream);
     const messages = await this.buildInitialMessages();

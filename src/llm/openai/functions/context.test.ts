@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { mockToolContext } from '../../../../test/mocks/tool';
+import { mockStorage, mockToolContext } from '../../../../test/mocks/tool';
 
 import { storeContextFunction, recallContextFunction } from './context';
 
@@ -34,7 +34,7 @@ describe('Context Functions', () => {
           mockToolContext
         );
 
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+        expect(mockStorage.put).toHaveBeenCalledWith(
           'context',
           'test context content'
         );
@@ -60,14 +60,12 @@ describe('Context Functions', () => {
           mockToolContext
         );
 
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith('context', '');
+        expect(mockStorage.put).toHaveBeenCalledWith('context', '');
         expect(result).toEqual({ success: true });
       });
 
       it('storage.putでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.put.mockRejectedValue(
-          new Error('Storage error')
-        );
+        mockStorage.put.mockRejectedValue(new Error('Storage error'));
 
         const args = { context: 'test content' };
         const result = await storeContextFunction.handler(
@@ -100,7 +98,7 @@ describe('Context Functions', () => {
 
     describe('handler', () => {
       it('保存されたコンテキストを読み出す', async () => {
-        mockToolContext.storage.get.mockResolvedValue('saved context content');
+        mockStorage.get.mockResolvedValue('saved context content');
 
         const args = {};
         const result = await recallContextFunction.handler(
@@ -108,7 +106,7 @@ describe('Context Functions', () => {
           mockToolContext
         );
 
-        expect(mockToolContext.storage.get).toHaveBeenCalledWith('context');
+        expect(mockStorage.get).toHaveBeenCalledWith('context');
         expect(result).toEqual({
           success: true,
           context: 'saved context content',
@@ -116,7 +114,7 @@ describe('Context Functions', () => {
       });
 
       it('コンテキストが空の場合は "no context." を返す', async () => {
-        mockToolContext.storage.get.mockResolvedValue('');
+        mockStorage.get.mockResolvedValue('');
 
         const args = {};
         const result = await recallContextFunction.handler(
@@ -124,7 +122,7 @@ describe('Context Functions', () => {
           mockToolContext
         );
 
-        expect(mockToolContext.storage.get).toHaveBeenCalledWith('context');
+        expect(mockStorage.get).toHaveBeenCalledWith('context');
         expect(result).toEqual({
           success: true,
           context: 'no context.',
@@ -132,7 +130,7 @@ describe('Context Functions', () => {
       });
 
       it('コンテキストが存在しない場合は "no context." を返す', async () => {
-        mockToolContext.storage.get.mockResolvedValue(undefined);
+        mockStorage.get.mockResolvedValue(undefined);
 
         const args = {};
         const result = await recallContextFunction.handler(
@@ -140,7 +138,7 @@ describe('Context Functions', () => {
           mockToolContext
         );
 
-        expect(mockToolContext.storage.get).toHaveBeenCalledWith('context');
+        expect(mockStorage.get).toHaveBeenCalledWith('context');
         expect(result).toEqual({
           success: true,
           context: 'no context.',
@@ -148,9 +146,7 @@ describe('Context Functions', () => {
       });
 
       it('storage.getでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.get.mockRejectedValue(
-          new Error('Storage error')
-        );
+        mockStorage.get.mockRejectedValue(new Error('Storage error'));
 
         const args = {};
         const result = await recallContextFunction.handler(

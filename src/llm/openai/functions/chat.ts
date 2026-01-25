@@ -17,20 +17,11 @@ export const checkNotificationsFunction = new Tool(
   {},
   async (_, ctx) => {
     try {
-      const channelId = await ctx.store.get(ctx.chatChannelKey);
-      if (channelId === null) {
-        await ctx.logger.error(
-          'Chat channel ID not found in environment variables.'
-        );
-        return {
-          success: false,
-          error: 'Chat tool is currently unavailable.',
-        };
-      }
+      const { chatChannelId, discordBotToken } = ctx.instanceConfig;
 
       const notificationDetails = await getNotificationDetails(
-        ctx.discordBotToken,
-        channelId
+        discordBotToken,
+        chatChannelId
       );
 
       return {
@@ -64,21 +55,14 @@ export const readChatMessagesFunction = new Tool(
   },
   async ({ limit }, ctx) => {
     try {
-      const channelId = await ctx.store.get(ctx.chatChannelKey);
-      if (channelId === null) {
-        await ctx.logger.error(
-          'Chat channel ID not found in environment variables.'
-        );
-        return {
-          success: false,
-          error: 'Chat tool is currently unavailable.',
-        };
-      }
+      const { chatChannelId, discordBotToken } = ctx.instanceConfig;
 
       const messages = await getChannelMessages(
-        ctx.discordBotToken,
-        channelId,
-        { limit }
+        discordBotToken,
+        chatChannelId,
+        {
+          limit,
+        }
       );
 
       return {
@@ -119,18 +103,9 @@ export const sendChatMessageFunction = new Tool(
   },
   async ({ message }, ctx) => {
     try {
-      const channelId = await ctx.store.get(ctx.chatChannelKey);
-      if (channelId === null) {
-        await ctx.logger.error(
-          'Chat channel ID not found in environment variables.'
-        );
-        return {
-          success: false,
-          error: 'Chat tool is currently unavailable.',
-        };
-      }
+      const { chatChannelId, discordBotToken } = ctx.instanceConfig;
 
-      await sendChannelMessage(ctx.discordBotToken, channelId, {
+      await sendChannelMessage(discordBotToken, chatChannelId, {
         content: message,
       });
 
@@ -158,20 +133,11 @@ export const addReactionToChatMessageFunction = new Tool(
   },
   async ({ messageId, reaction }, ctx) => {
     try {
-      const channelId = await ctx.store.get(ctx.chatChannelKey);
-      if (channelId === null) {
-        await ctx.logger.error(
-          'Chat channel ID not found in environment variables.'
-        );
-        return {
-          success: false,
-          error: 'Chat tool is currently unavailable.',
-        };
-      }
+      const { chatChannelId, discordBotToken } = ctx.instanceConfig;
 
       await addReactionToMessage(
-        ctx.discordBotToken,
-        channelId,
+        discordBotToken,
+        chatChannelId,
         messageId,
         reaction
       );

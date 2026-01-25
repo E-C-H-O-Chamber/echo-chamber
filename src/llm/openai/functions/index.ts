@@ -2,15 +2,13 @@ import { z } from 'zod';
 
 import { getErrorMessage } from '../../../utils/error';
 
+import type { EchoInstanceConfig } from '../../../types/echo-config';
 import type { Logger } from '../../../utils/logger';
 import type { FunctionTool } from 'openai/resources/responses/responses';
 
 export interface ToolContext {
-  echoId: string;
-  store: KVNamespace;
+  instanceConfig: EchoInstanceConfig;
   storage: DurableObjectStorage;
-  discordBotToken: string;
-  chatChannelKey: string;
   logger: Logger;
 }
 

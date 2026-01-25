@@ -32,6 +32,5 @@ vi.mock('../src/utils/thinking-stream', () => {
 
   return {
     ThinkingStream: vi.fn(() => mockThinkingStream),
-    createThinkingStream: vi.fn(() => mockThinkingStream),
   };
 });

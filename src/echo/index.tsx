@@ -152,18 +152,17 @@ export class Echo extends DurableObject<Env> {
       return;
     }
 
-    this.instanceConfig = getInstanceConfig(this._env, id);
+    this.instanceConfig = await getInstanceConfig(this._env, this.store, id);
     this.thinkingEngine = new ThinkingEngine({
       env: this._env,
       storage: this.storage,
-      store: this.store,
       logger: this.logger,
       instanceConfig: this.instanceConfig,
     });
 
     // ストレージにID/名前を保存（alarmから参照するため）
     await this.storage.put('id', id);
-    await this.storage.put('name', await this.store.get<string>(`name_${id}`));
+    await this.storage.put('name', this.instanceConfig.name);
   }
 
   /**
@@ -473,18 +472,14 @@ export class Echo extends DurableObject<Env> {
     const name = await this.getName();
     const instanceConfig = this.getInstanceConfigOrThrow();
 
-    const channelId = await this.store.get<string>(
-      instanceConfig.chatChannelKey
-    );
-
-    if (channelId === null) {
+    if (instanceConfig.chatChannelId === '') {
       await this.logger.error(`${name}のチャンネルIDが設定されていません。`);
       return false;
     }
 
     const unreadCount = await getUnreadMessageCount(
       instanceConfig.discordBotToken,
-      channelId
+      instanceConfig.chatChannelId
     );
     if (unreadCount > 0) {
       await this.logger.info(`${name}の未読メッセージ数: ${unreadCount}`);

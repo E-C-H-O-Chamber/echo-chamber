@@ -32,9 +32,9 @@ export interface EchoInstanceConfig {
   /** Discord Bot トークン（インスタンス固有） */
   discordBotToken: string;
 
-  /** チャットチャンネル ID を取得するための KV キー */
-  chatChannelKey: string;
+  /** チャットチャンネル ID */
+  chatChannelId: string;
 
-  /** Thinking ログを送信する Discord チャンネル ID を取得するための KV キー */
-  thinkingChannelKey: string;
+  /** Thinking ログを送信する Discord チャンネル ID */
+  thinkingChannelId: string;
 }

@@ -8,7 +8,7 @@ import {
   vi,
 } from 'vitest';
 
-import { mockToolContext } from '../../../../test/mocks/tool';
+import { mockStorage, mockToolContext } from '../../../../test/mocks/tool';
 import { calculateForgottenAt } from '../../../utils/memory';
 
 import { storeKnowledgeFunction, searchKnowledgeFunction } from './knowledge';
@@ -91,8 +91,8 @@ describe('Knowledge Functions', () => {
           mockToolContext
         );
 
-        expect(mockToolContext.storage.get).toHaveBeenCalledWith('knowledge');
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+        expect(mockStorage.get).toHaveBeenCalledWith('knowledge');
+        expect(mockStorage.put).toHaveBeenCalledWith(
           'knowledge',
           expect.arrayContaining([
             {
@@ -118,7 +118,7 @@ describe('Knowledge Functions', () => {
           mockToolContext
         );
 
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+        expect(mockStorage.put).toHaveBeenCalledWith(
           'knowledge',
           expect.arrayContaining([
             {
@@ -145,7 +145,7 @@ describe('Knowledge Functions', () => {
           mockToolContext
         );
 
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+        expect(mockStorage.put).toHaveBeenCalledWith(
           'knowledge',
           expect.arrayContaining([
             expect.objectContaining({
@@ -169,7 +169,7 @@ describe('Knowledge Functions', () => {
           mockToolContext
         );
 
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+        expect(mockStorage.put).toHaveBeenCalledWith(
           'knowledge',
           expect.arrayContaining([
             expect.objectContaining({
@@ -188,7 +188,7 @@ describe('Knowledge Functions', () => {
             content: 'Duplicate knowledge',
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           knowledge: 'Duplicate knowledge',
@@ -204,7 +204,7 @@ describe('Knowledge Functions', () => {
           success: false,
           error: 'Knowledge already exists',
         });
-        expect(mockToolContext.storage.put).not.toHaveBeenCalled();
+        expect(mockStorage.put).not.toHaveBeenCalled();
       });
 
       it('知識の最大数を超えた場合、forgottenAtが最も早いものを削除する（昇順ケース）', async () => {
@@ -216,7 +216,7 @@ describe('Knowledge Functions', () => {
             lastAccessedAt: new Date(2025, 0, i + 1).toISOString(),
           })
         );
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           knowledge: 'New knowledge that triggers deletion',
@@ -228,7 +228,7 @@ describe('Knowledge Functions', () => {
           mockToolContext
         );
 
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+        expect(mockStorage.put).toHaveBeenCalledWith(
           'knowledge',
           expect.not.arrayContaining([
             expect.objectContaining({
@@ -236,7 +236,7 @@ describe('Knowledge Functions', () => {
             }),
           ])
         );
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+        expect(mockStorage.put).toHaveBeenCalledWith(
           'knowledge',
           expect.arrayContaining([
             expect.objectContaining({
@@ -258,7 +258,7 @@ describe('Knowledge Functions', () => {
             lastAccessedAt: new Date(2025, 0, 100 - i).toISOString(),
           })
         );
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           knowledge: 'New knowledge that triggers deletion',
@@ -270,7 +270,7 @@ describe('Knowledge Functions', () => {
           mockToolContext
         );
 
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+        expect(mockStorage.put).toHaveBeenCalledWith(
           'knowledge',
           expect.not.arrayContaining([
             expect.objectContaining({
@@ -278,7 +278,7 @@ describe('Knowledge Functions', () => {
             }),
           ])
         );
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+        expect(mockStorage.put).toHaveBeenCalledWith(
           'knowledge',
           expect.arrayContaining([
             expect.objectContaining({
@@ -309,7 +309,7 @@ describe('Knowledge Functions', () => {
             })
           ),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           knowledge: 'New knowledge',
@@ -322,7 +322,7 @@ describe('Knowledge Functions', () => {
         );
 
         // otherカテゴリーの知識が削除され、ruleは残る
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+        expect(mockStorage.put).toHaveBeenCalledWith(
           'knowledge',
           expect.arrayContaining([
             expect.objectContaining({
@@ -335,9 +335,7 @@ describe('Knowledge Functions', () => {
       });
 
       it('storage.getでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.get.mockRejectedValue(
-          new Error('Storage get error')
-        );
+        mockStorage.get.mockRejectedValue(new Error('Storage get error'));
 
         const args = {
           knowledge: 'Knowledge that fails to store',
@@ -353,13 +351,11 @@ describe('Knowledge Functions', () => {
           success: false,
           error: 'Failed to store knowledge',
         });
-        expect(mockToolContext.storage.put).not.toHaveBeenCalled();
+        expect(mockStorage.put).not.toHaveBeenCalled();
       });
 
       it('storage.putでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.put.mockRejectedValue(
-          new Error('Storage put error')
-        );
+        mockStorage.put.mockRejectedValue(new Error('Storage put error'));
 
         const args = {
           knowledge: 'Knowledge that fails to store',
@@ -436,7 +432,7 @@ describe('Knowledge Functions', () => {
             lastAccessedAt: '2025-01-15T00:00:00.000Z',
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: 'sky',
@@ -466,7 +462,7 @@ describe('Knowledge Functions', () => {
             tags: ['technology'],
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: 'machine learning',
@@ -497,7 +493,7 @@ describe('Knowledge Functions', () => {
             tags: ['technology'],
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: 'machine learning',
@@ -541,7 +537,7 @@ describe('Knowledge Functions', () => {
             lastAccessedAt: '2025-01-20T00:00:00.000Z',
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: 'machine networks deep',
@@ -592,7 +588,7 @@ describe('Knowledge Functions', () => {
             lastAccessedAt: '2025-01-15T00:00:00.000Z',
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: 'machine learning deep networks',
@@ -643,7 +639,7 @@ describe('Knowledge Functions', () => {
             lastAccessedAt: '2025-01-22T00:00:00.000Z',
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: 'machine learning',
@@ -683,7 +679,7 @@ describe('Knowledge Functions', () => {
             tags: ['programming'],
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: '  python   programming  ',
@@ -719,7 +715,7 @@ describe('Knowledge Functions', () => {
             tags: ['food'],
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: 'the',
@@ -751,7 +747,7 @@ describe('Knowledge Functions', () => {
             lastAccessedAt: new Date(2025, 0, -i).toISOString(), // 同じアクセス数の場合は最近アクセスされた順
           })
         );
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: 'common',
@@ -802,7 +798,7 @@ describe('Knowledge Functions', () => {
             lastAccessedAt: '2025-01-20T00:00:00.000Z',
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: 'ai',
@@ -827,7 +823,7 @@ describe('Knowledge Functions', () => {
         // accessCount: 3 → 4
         // lastAccessedAt: 2025-08-04T08:00:00.000Z（テスト時刻）
         // forgottenAt: 2025-08-04 + 2^4日 * 1(other) = 2025-08-04 + 16日 = 2025-08-20
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+        expect(mockStorage.put).toHaveBeenCalledWith(
           'knowledge',
           expect.arrayContaining([
             expect.objectContaining({
@@ -849,7 +845,7 @@ describe('Knowledge Functions', () => {
             lastAccessedAt: '2025-01-20T00:00:00.000Z',
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: 'rule',
@@ -859,7 +855,7 @@ describe('Knowledge Functions', () => {
 
         // accessCount: 1 → 2
         // forgottenAt: 2025-08-04 + 2^2日 * 5(rule) = 2025-08-04 + 20日 = 2025-08-24
-        expect(mockToolContext.storage.put).toHaveBeenCalledWith(
+        expect(mockStorage.put).toHaveBeenCalledWith(
           'knowledge',
           expect.arrayContaining([
             expect.objectContaining({
@@ -878,7 +874,7 @@ describe('Knowledge Functions', () => {
             content: 'Unrelated content',
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: 'nonexistent query',
@@ -896,7 +892,7 @@ describe('Knowledge Functions', () => {
       });
 
       it('知識が存在しない場合は空配列を返す', async () => {
-        mockToolContext.storage.get.mockResolvedValue(undefined);
+        mockStorage.get.mockResolvedValue(undefined);
 
         const args = {
           query: 'any query',
@@ -914,9 +910,7 @@ describe('Knowledge Functions', () => {
       });
 
       it('storage.getでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.get.mockRejectedValue(
-          new Error('Storage get error')
-        );
+        mockStorage.get.mockRejectedValue(new Error('Storage get error'));
 
         const args = {
           query: 'query that fails',
@@ -931,20 +925,18 @@ describe('Knowledge Functions', () => {
           success: false,
           error: 'Failed to search knowledge',
         });
-        expect(mockToolContext.storage.put).not.toHaveBeenCalled();
+        expect(mockStorage.put).not.toHaveBeenCalled();
       });
 
       it('storage.putでエラーが発生した場合はエラーを返す', async () => {
-        mockToolContext.storage.put.mockRejectedValue(
-          new Error('Storage put error')
-        );
+        mockStorage.put.mockRejectedValue(new Error('Storage put error'));
 
         const existingKnowledge = [
           createMockKnowledge({
             content: 'AI is transforming the world',
           }),
         ];
-        mockToolContext.storage.get.mockResolvedValue(existingKnowledge);
+        mockStorage.get.mockResolvedValue(existingKnowledge);
 
         const args = {
           query: 'ai',

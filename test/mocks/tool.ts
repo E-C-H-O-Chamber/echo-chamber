@@ -3,15 +3,10 @@ import { vi } from 'vitest';
 
 import { createLogger } from '../../src/utils/logger';
 
-const mockStore = {
-  get: vi.fn(),
-  put: vi.fn(),
-  delete: vi.fn(),
-  list: vi.fn(),
-  getWithMetadata: vi.fn(),
-};
+import type { ToolContext } from '../../src/llm/openai/functions';
+import type { EchoInstanceConfig } from '../../src/types/echo-config';
 
-const mockStorage = {
+export const mockStorage = {
   get: vi.fn(),
   put: vi.fn(),
   delete: vi.fn(),
@@ -40,11 +35,17 @@ vi.spyOn(mockLogger, 'info').mockImplementation(vi.fn());
 vi.spyOn(mockLogger, 'warn').mockImplementation(vi.fn());
 vi.spyOn(mockLogger, 'error').mockImplementation(vi.fn());
 
-export const mockToolContext = {
-  echoId: 'mock-echo-id',
-  store: mockStore,
-  storage: mockStorage,
+export const mockInstanceConfig: EchoInstanceConfig = {
+  id: 'rin',
+  name: 'テスト用リン',
+  systemPrompt: 'Test system prompt',
   discordBotToken: 'mock-discord-token',
-  chatChannelKey: 'chat_channel_discord_mock',
+  chatChannelId: 'mock-chat-channel-id',
+  thinkingChannelId: 'mock-thinking-channel-id',
+};
+
+export const mockToolContext: ToolContext = {
+  instanceConfig: mockInstanceConfig,
+  storage: mockStorage as unknown as DurableObjectStorage,
   logger: mockLogger,
 };
