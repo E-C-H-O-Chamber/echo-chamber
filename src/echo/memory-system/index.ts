@@ -10,12 +10,18 @@ const SEARCH_RESULT_LIMIT = 5;
 const SIMILARITY_THRESHOLD = 0.001;
 
 /**
- * メモリ検索結果
+ * メモリのスナップショット（embeddingを除いた情報）
  */
-export interface MemorySearchResult {
+export interface MemorySnapshot {
   content: string;
   emotion: Emotion;
   createdAt: string;
+}
+
+/**
+ * メモリ検索結果
+ */
+export interface MemorySearchResult extends MemorySnapshot {
   similarity: number;
 }
 
@@ -68,6 +74,40 @@ export class MemorySystem {
 
     const updatedMemories = [...existingMemories, newMemory];
     await this.storage.put(STORAGE_KEY, updatedMemories);
+  }
+
+  /**
+   * 最新のメモリを取得する
+   * @returns 最新のメモリ、存在しない場合はnull
+   */
+  async getLatestMemory(): Promise<MemorySnapshot | null> {
+    const memories = await this.getAllMemories();
+
+    if (memories.length === 0) {
+      return null;
+    }
+
+    let latestIndex = 0;
+    let latestTime = memories[0]?.createdAt ?? '';
+
+    for (let i = 1; i < memories.length; i++) {
+      const currentTime = memories[i]?.createdAt ?? '';
+      if (currentTime > latestTime) {
+        latestIndex = i;
+        latestTime = currentTime;
+      }
+    }
+
+    const latest = memories[latestIndex];
+    if (!latest) {
+      return null;
+    }
+
+    return {
+      content: latest.content,
+      emotion: latest.emotion,
+      createdAt: latest.createdAt,
+    };
   }
 
   /**

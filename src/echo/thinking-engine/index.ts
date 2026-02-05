@@ -6,10 +6,6 @@ import {
   readChatMessagesFunction,
   sendChatMessageFunction,
 } from '../../llm/openai/functions/chat';
-import {
-  storeContextFunction,
-  recallContextFunction,
-} from '../../llm/openai/functions/context';
 // import {
 //   storeKnowledgeFunction,
 //   searchKnowledgeFunction,
@@ -26,7 +22,8 @@ import {
 //   completeTaskFunction,
 // } from '../../llm/openai/functions/task';
 import { thinkDeeplyFunction } from '../../llm/openai/functions/think';
-import { getCurrentTimeFunction } from '../../llm/openai/functions/time';
+// import { getCurrentTimeFunction } from '../../llm/openai/functions/time';
+import { formatDatetime } from '../../utils/datetime';
 import { ThinkingStream } from '../../utils/thinking-stream';
 import { MemorySystem } from '../memory-system';
 import { getTodayUsageKey } from '../usage';
@@ -90,13 +87,11 @@ export class ThinkingEngine {
     return new OpenAIClient(
       this.env,
       [
-        getCurrentTimeFunction,
+        // getCurrentTimeFunction,
         checkNotificationsFunction,
         readChatMessagesFunction,
         sendChatMessageFunction,
         addReactionToChatMessageFunction,
-        storeContextFunction,
-        recallContextFunction,
         // storeKnowledgeFunction,
         // searchKnowledgeFunction,
         storeMemoryFunction,
@@ -114,34 +109,35 @@ export class ThinkingEngine {
   }
 
   private async buildInitialMessages(): Promise<ResponseInput> {
-    // const result = await listTaskFunction.handler({}, this.toolContext);
-    // const hasTasks =
-    //   'tasks' in result &&
-    //   Array.isArray(result.tasks) &&
-    //   result.tasks.length > 0;
-    // const taskMessage = hasTasks
-    //   ? [
-    //       this.createFunctionCallMessage(listTaskFunction),
-    //       {
-    //         type: 'function_call_output' as const,
-    //         call_id: listTaskFunction.name,
-    //         output: JSON.stringify(result),
-    //       },
-    //     ]
-    //   : [];
+    const currentDatetime = formatDatetime(new Date());
+    const latestMemory = await this.toolContext.memorySystem.getLatestMemory();
+    const context = latestMemory
+      ? `context loaded: ${JSON.stringify(
+          {
+            content: latestMemory.content,
+            created_at: latestMemory.createdAt,
+            emotion: {
+              valence: latestMemory.emotion.valence,
+              arousal: latestMemory.emotion.arousal,
+              labels: latestMemory.emotion.labels,
+            },
+          },
+          null,
+          2
+        )}`
+      : 'No context loaded.';
 
     return [
       {
         role: 'developer',
         content: this.instanceConfig.systemPrompt,
       },
-      this.createFunctionCallMessage(recallContextFunction),
-      await this.createFunctionCallOutputMessage(recallContextFunction),
-      this.createFunctionCallMessage(getCurrentTimeFunction),
-      await this.createFunctionCallOutputMessage(getCurrentTimeFunction),
+      {
+        role: 'developer',
+        content: `${context}\nCurrent datetime: ${currentDatetime}`,
+      },
       this.createFunctionCallMessage(checkNotificationsFunction),
       await this.createFunctionCallOutputMessage(checkNotificationsFunction),
-      // ...taskMessage,
     ];
   }
 
