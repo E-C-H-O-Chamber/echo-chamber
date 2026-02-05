@@ -228,32 +228,12 @@ const functionCallFormatters: Record<
   string,
   (args: Record<string, unknown>) => string
 > = {
-  get_current_time: (args) => `*get_current_time: ${args.timezone as string}*`,
   read_chat_messages: (args) => `*read_chat_messages: ${args.limit as number}*`,
   think_deeply: (args) => `*think_deeply: ${args.thought as string}*`,
-  store_context: (args) => `*store_context: ${args.context as string}*`,
-  create_task: (args) => `*create_task: ${args.name as string}*`,
-  update_task: (args) => `*update_task: ${args.name as string}*`,
-  delete_task: (args) => `*delete_task: ${args.name as string}*`,
-  complete_task: (args) => `*complete_task: ${args.name as string}*`,
-  store_knowledge: (args) => {
-    const knowledge = args.knowledge as string;
-    const category = args.category as string | undefined;
-    const tags = args.tags as string[] | undefined;
-
-    return `*store_knowledge: ${knowledge}${category != null ? ` (${category})` : ''}${tags ? ` [${tags.join(', ')}]` : ''}*`;
-  },
-  search_knowledge: (args) => {
-    const query = args.query as string;
-    const category = args.category as string | undefined;
-    const tags = args.tags as string[] | undefined;
-
-    return `*search_knowledge: ${query}${category == null ? ` (${category})` : ''}${tags ? ` [${tags.join(', ')}]` : ''}*`;
-  },
   store_memory: (args) => {
     const content = args.content as string;
-    const { valence, arousal } = args.emotion as Emotion;
-    return `*store_memory: ${content}\n(${valence}, ${arousal})*`;
+    const { valence, arousal, labels } = args.emotion as Emotion;
+    return `*store_memory: ${content}\n(${valence}, ${arousal}) [${labels.join(', ')}]*`;
   },
   search_memory: (args) => `*search_memory: ${args.query as string}*`,
 };

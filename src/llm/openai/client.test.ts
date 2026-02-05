@@ -506,20 +506,6 @@ describe('formatLogOutput', () => {
     );
   });
 
-  it('get_current_time', () => {
-    const output: ResponseOutputItem[] = [
-      {
-        type: 'function_call',
-        call_id: 'call_time',
-        name: 'get_current_time',
-        arguments: JSON.stringify({ timezone: 'Asia/Tokyo' }),
-        status: 'completed',
-      },
-    ];
-
-    expect(formatLogOutput(output)).toBe('*get_current_time: Asia/Tokyo*');
-  });
-
   it('read_chat_messages', () => {
     const output: ResponseOutputItem[] = [
       {
@@ -548,86 +534,6 @@ describe('formatLogOutput', () => {
     expect(formatLogOutput(output)).toBe(
       '*think_deeply: Deep philosophical question*'
     );
-  });
-
-  it('store_context', () => {
-    const output: ResponseOutputItem[] = [
-      {
-        type: 'function_call',
-        call_id: 'call_store',
-        name: 'store_context',
-        arguments: JSON.stringify({ context: 'Important context data' }),
-        status: 'completed',
-      },
-    ];
-
-    expect(formatLogOutput(output)).toBe(
-      '*store_context: Important context data*'
-    );
-  });
-
-  it('create_task', () => {
-    const output: ResponseOutputItem[] = [
-      {
-        type: 'function_call',
-        call_id: 'call_create',
-        name: 'create_task',
-        arguments: JSON.stringify({
-          name: 'New Task',
-          content: 'Task content goes here',
-          execution_time: '2025-08-07T12:00:00Z',
-        }),
-        status: 'completed',
-      },
-    ];
-
-    expect(formatLogOutput(output)).toBe('*create_task: New Task*');
-  });
-
-  it('update_task', () => {
-    const output: ResponseOutputItem[] = [
-      {
-        type: 'function_call',
-        call_id: 'call_update',
-        name: 'update_task',
-        arguments: JSON.stringify({
-          name: 'Updated Task',
-          content: 'Updated task content',
-          execution_time: '2025-08-07T12:00:00Z',
-        }),
-        status: 'completed',
-      },
-    ];
-
-    expect(formatLogOutput(output)).toBe('*update_task: Updated Task*');
-  });
-
-  it('delete_task', () => {
-    const output: ResponseOutputItem[] = [
-      {
-        type: 'function_call',
-        call_id: 'call_delete',
-        name: 'delete_task',
-        arguments: JSON.stringify({ name: 'Task to Delete' }),
-        status: 'completed',
-      },
-    ];
-
-    expect(formatLogOutput(output)).toBe('*delete_task: Task to Delete*');
-  });
-
-  it('complete_task', () => {
-    const output: ResponseOutputItem[] = [
-      {
-        type: 'function_call',
-        call_id: 'call_complete',
-        name: 'complete_task',
-        arguments: JSON.stringify({ name: 'Task to Complete' }),
-        status: 'completed',
-      },
-    ];
-
-    expect(formatLogOutput(output)).toBe('*complete_task: Task to Complete*');
   });
 
   it('デフォルトの function_call', () => {

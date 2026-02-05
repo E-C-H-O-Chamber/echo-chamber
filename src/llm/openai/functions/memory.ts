@@ -12,22 +12,20 @@ const emotionSchema = z.object({
     .number()
     .min(-1.0)
     .max(1.0)
-    .describe('Emotional valence from -1.0 (negative) to 1.0 (positive)'),
+    .describe('感情価（-1.0：ネガティブ 〜 1.0：ポジティブ）'),
   arousal: z
     .number()
     .min(0.0)
     .max(1.0)
-    .describe('Emotional arousal from 0.0 (calm) to 1.0 (excited)'),
+    .describe('覚醒度（0.0：穏やか 〜 1.0：興奮）'),
   labels: z
     .array(z.string())
-    .describe(
-      'Emotion labels (e.g., "joy", "sadness", "surprise", "intellectual-engagement")'
-    ),
+    .describe('感情ラベル（例: "楽しい", "悲しい", "驚き", "知的好奇心"）'),
 });
 
 export const storeMemoryFunction = new Tool(
   'store_memory',
-  'Store an episodic memory with emotional context for future semantic retrieval. Use this to preserve meaningful experiences, conversations, or moments that have emotional significance and should be remembered long-term.',
+  '将来のセマンティック検索のために、感情的コンテキストを伴うエピソード記憶を保存する。意味のある体験、会話、または感情的な重要性を持つ瞬間を保存するために使用せよ。システムはセマンティック検索のためにエンベディングを使用し、容量がいっぱいになると最も古い記憶を削除して自動的に管理する。',
   {
     content: z
       .string()
@@ -35,11 +33,9 @@ export const storeMemoryFunction = new Tool(
       .max(MAX_CONTENT_LENGTH)
       .trim()
       .describe(
-        `The full content of the memory with all relevant details. Maximum ${MAX_CONTENT_LENGTH} characters.`
+        `関連するすべての詳細を含む記憶の完全な内容。最大${MAX_CONTENT_LENGTH}文字。`
       ),
-    emotion: emotionSchema.describe(
-      'The emotional context associated with this memory.'
-    ),
+    emotion: emotionSchema.describe('この記憶に付随する感情'),
   },
   async ({ content, emotion }, ctx) => {
     try {
@@ -57,7 +53,7 @@ export const storeMemoryFunction = new Tool(
 
 export const searchMemoryFunction = new Tool(
   'search_memory',
-  'Search for relevant memories using semantic similarity. Use this to recall past experiences, find related memories, or retrieve memories that are semantically similar to a query.',
+  'セマンティック類似性を使用して関連する記憶を検索する。過去の経験を思い出したり、関連する記憶を見つけたり、正確なキーワードではなく概念的にクエリに一致する記憶を取得するために使用せよ。セマンティック類似性でソートされた最大5件の最も関連性の高い記憶を返す。',
   {
     query: z
       .string()
@@ -65,7 +61,7 @@ export const searchMemoryFunction = new Tool(
       .max(MAX_QUERY_LENGTH)
       .trim()
       .describe(
-        'The search query. Will be embedded and compared against stored memories using cosine similarity.'
+        '検索クエリ。埋め込み化され、コサイン類似度を使用して保存された記憶と比較される。'
       ),
   },
   async ({ query }, ctx) => {

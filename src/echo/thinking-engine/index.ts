@@ -6,23 +6,11 @@ import {
   readChatMessagesFunction,
   sendChatMessageFunction,
 } from '../../llm/openai/functions/chat';
-// import {
-//   storeKnowledgeFunction,
-//   searchKnowledgeFunction,
-// } from '../../llm/openai/functions/knowledge';
 import {
   storeMemoryFunction,
   searchMemoryFunction,
 } from '../../llm/openai/functions/memory';
-// import {
-//   createTaskFunction,
-//   listTaskFunction,
-//   updateTaskFunction,
-//   deleteTaskFunction,
-//   completeTaskFunction,
-// } from '../../llm/openai/functions/task';
 import { thinkDeeplyFunction } from '../../llm/openai/functions/think';
-// import { getCurrentTimeFunction } from '../../llm/openai/functions/time';
 import { formatDatetime } from '../../utils/datetime';
 import { ThinkingStream } from '../../utils/thinking-stream';
 import { MemorySystem } from '../memory-system';
@@ -87,20 +75,12 @@ export class ThinkingEngine {
     return new OpenAIClient(
       this.env,
       [
-        // getCurrentTimeFunction,
         checkNotificationsFunction,
         readChatMessagesFunction,
         sendChatMessageFunction,
         addReactionToChatMessageFunction,
-        // storeKnowledgeFunction,
-        // searchKnowledgeFunction,
         storeMemoryFunction,
         searchMemoryFunction,
-        // listTaskFunction,
-        // createTaskFunction,
-        // updateTaskFunction,
-        // completeTaskFunction,
-        // deleteTaskFunction,
         thinkDeeplyFunction,
       ],
       this.toolContext,

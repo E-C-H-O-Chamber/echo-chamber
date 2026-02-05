@@ -13,7 +13,7 @@ import { Tool } from '.';
 
 export const checkNotificationsFunction = new Tool(
   'check_notifications',
-  'Check for new notifications in the chat channel. Returns the unread message count and a preview of the latest message.',
+  'チャットチャンネルの新しい通知を確認する。未読メッセージ数と最新メッセージのプレビューを返す。通知が見つかった場合は、内容を確認し、必要に応じて対応することを推奨する。',
   {},
   async (_, ctx) => {
     try {
@@ -49,9 +49,9 @@ export const checkNotificationsFunction = new Tool(
 
 export const readChatMessagesFunction = new Tool(
   'read_chat_messages',
-  'Retrieve chat messages. Returns the latest messages in ascending order by timestamp.',
+  'チャットチャンネルからチャットメッセージを読み取る。最新のメッセージをタイムスタンプの昇順で返す。会話の文脈を理解するために、十分な数のメッセージを取得するのが良い。取得したメッセージ数では状況を完全に把握できない場合は、より大きな制限値でこのツールを再度呼び出すことができる。',
   {
-    limit: z.int().min(1).max(100).describe('Number of messages to retrieve'),
+    limit: z.int().min(1).max(100).describe('取得するメッセージ数'),
   },
   async ({ limit }, ctx) => {
     try {
@@ -93,13 +93,13 @@ export const readChatMessagesFunction = new Tool(
 
 export const sendChatMessageFunction = new Tool(
   'send_chat_message',
-  'Send a message to the chat channel',
+  'チャットチャンネルにメッセージを送信する。あなたの考えは、それを伝える行動を起こさなければ伝わらない。チャットにメッセージを送ることはその方法の一つである。',
   {
     message: z
       .string()
       .min(1)
       .max(2000)
-      .describe('Message content to send. Max 2000 characters.'),
+      .describe('送信するメッセージ内容。最大2000文字。'),
   },
   async ({ message }, ctx) => {
     try {
@@ -126,10 +126,10 @@ export const sendChatMessageFunction = new Tool(
 
 export const addReactionToChatMessageFunction = new Tool(
   'add_reaction_to_chat_message',
-  'Add a reaction to a specific chat message. The reaction must be a valid emoji string. When you react to a message, the messages up to that point are marked as read.',
+  '特定のチャットメッセージにリアクションを追加する。リアクションは有効な絵文字文字列である必要がある。メッセージにリアクションすると、そこまでのメッセージは既読としてマークされる。メッセージに返信する必要性を感じないが、読んだことを示したい場合は、リアクションを付けることができる。返信もリアクションもしなければ、他者はあなたがそのメッセージを読んだかどうかすら分からない。',
   {
-    messageId: z.string().describe('ID of the message to react to'),
-    reaction: z.string().describe('Reaction to add, emoji string'),
+    messageId: z.string().describe('リアクションを付けるメッセージのID'),
+    reaction: z.string().describe('追加するリアクション（絵文字文字列）'),
   },
   async ({ messageId, reaction }, ctx) => {
     try {
